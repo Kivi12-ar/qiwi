@@ -1,268 +1,158 @@
-// --- Инициализация данных ---
-let users = JSON.parse(localStorage.getItem('users')) || [];
-let posts = JSON.parse(localStorage.getItem('posts')) || [];
-let currentUser = JSON.parse(sessionStorage.getItem('sessionUser')) || createGuest();
-let selectedImageData = null;
-let isLoginMode = true;
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Инициализация ---
+    let users = JSON.parse(localStorage.getItem('users')) || [];
+    let posts = JSON.parse(localStorage.getItem('posts')) || [];
+    let currentUser = JSON.parse(sessionStorage.getItem('sessionUser')) || { name: "Гость", handle: `guest${Math.floor(Math.random()*1000)}`, isGuest: true };
+    let selectedImageData = null;
+    let isLoginMode = true;
 
-// --- Элементы DOM ---
-const authModal = document.getElementById('auth-modal');
-const mainAuthBtn = document.getElementById('main-auth-btn');
-const authSubmitBtn = document.getElementById('auth-submit-btn');
-const authToggle = document.getElementById('auth-toggle');
+    // --- Салюты (Canvas) ---
+    const canvas = document.getElementById('fireworks-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    window.onresize = resize; resize();
 
-// --- Движок фейерверков (Canvas) ---
-const canvas = document.getElementById('fireworks-canvas');
-const ctx = canvas.getContext('2d');
-let particles = [];
-function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-window.onresize = resize; resize();
-
-function triggerFirework() {
-    const x = Math.random() * canvas.width, y = Math.random() * (canvas.height/2);
-    for(let i=0; i<30; i++) particles.push({
-        x, y, alpha: 1, 
-        v: { x: (Math.random()-0.5)*10, y: (Math.random()-0.5)*10 },
-        c: `hsl(${Math.random()*360}, 70%, 60%)`
-    });
-}
-
-function animate() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    particles.forEach((p, i) => {
-        p.x += p.v.x; p.y += p.v.y; p.alpha -= 0.02;
-        ctx.globalAlpha = p.alpha; ctx.fillStyle = p.c;
-        ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, 7); ctx.fill();
-        if(p.alpha <= 0) particles.splice(i, 1);
-    });
-    requestAnimationFrame(animate);
-}
-animate();
-
-// --- Управление пользователями ---
-function createGuest() {
-    const id = Math.floor(Math.random()*9000)+1000;
-    return { name: `Гость_${id}`, handle: `guest${id}`, isGuest: true };
-}
-
-function updateUI() {
-    const userInfo = document.getElementById('user-info');
-    if (userInfo) {
-        userInfo.innerHTML = `Вы: <b>${currentUser.name}</b> ${currentUser.isGuest ? '<span class="guest-badge">Guest</span>' : '<span class="user-badge">User</span>'}`;
-    }
-    if (mainAuthBtn) {
-        mainAuthBtn.innerText = currentUser.isGuest ? "Войти" : "Выйти";
-    }
-    renderPosts();
-    renderRecommendations();
-}
-
-// --- Логика Авторизации (Исправлено) ---
-if (mainAuthBtn) {
-    mainAuthBtn.onclick = () => {
-        if (!currentUser.isGuest) {
-            // Выход
-            currentUser = createGuest();
-            sessionStorage.removeItem('sessionUser');
-            updateUI();
-        } else {
-            // Открыть модалку
-            authModal.classList.remove('hidden');
+    window.triggerFirework = () => {
+        const x = Math.random() * canvas.width, y = Math.random() * (canvas.height / 2);
+        for (let i = 0; i < 25; i++) {
+            particles.push({
+                x, y, alpha: 1,
+                v: { x: (Math.random() - 0.5) * 8, y: (Math.random() - 0.5) * 8 },
+                c: `hsl(${Math.random() * 360}, 80%, 60%)`
+            });
         }
     };
-}
 
-function closeModal() {
-    authModal.classList.add('hidden');
-}
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach((p, i) => {
+            p.x += p.v.x; p.y += p.v.y; p.alpha -= 0.015;
+            ctx.globalAlpha = p.alpha; ctx.fillStyle = p.c;
+            ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, 7); ctx.fill();
+            if (p.alpha <= 0) particles.splice(i, 1);
+        });
+        requestAnimationFrame(animate);
+    }
+    animate();
 
-if (authToggle) {
-    authToggle.onclick = () => {
-        isLoginMode = !isLoginMode;
-        document.getElementById('modal-title').innerText = isLoginMode ? "Вход" : "Регистрация";
-        authToggle.innerText = isLoginMode ? "Нет аккаунта? Регистрация" : "Уже есть аккаунт? Войти";
-        authSubmitBtn.innerText = isLoginMode ? "Войти" : "Создать аккаунт";
-    };
-}
+    // --- Логика Интерфейса ---
 
-if (authSubmitBtn) {
-    authSubmitBtn.onclick = () => {
-        const login = document.getElementById('auth-user').value.trim();
-        const pass = document.getElementById('auth-pass').value.trim();
-        if (!login || !pass) return alert("Введите данные");
+    function updateUI() {
+        document.getElementById('user-info').innerText = `@${currentUser.handle} (${currentUser.isGuest ? 'Гость' : 'Аккаунт'})`;
+        document.getElementById('main-auth-btn').innerText = currentUser.isGuest ? "Войти" : "Выйти";
+        renderPosts();
+        renderRecommendations();
+    }
 
-        if (isLoginMode) {
-            const user = users.find(u => u.handle === login && u.password === pass);
-            if (user) {
-                currentUser = { name: user.name, handle: user.handle, isGuest: false };
-                sessionStorage.setItem('sessionUser', JSON.stringify(currentUser));
-                closeModal();
-                updateUI();
-            } else {
-                alert("Неверный логин или пароль");
-            }
-        } else {
-            if (users.find(u => u.handle === login)) return alert("Логин занят");
-            users.push({ name: login, handle: login, password: pass });
-            localStorage.setItem('users', JSON.stringify(users));
-            alert("Регистрация успешна! Теперь войдите.");
-            isLoginMode = true;
-            authToggle.click();
-        }
-    };
-}
-
-// --- Посты и Комментарии ---
-function renderPosts() {
-    const feed = document.getElementById('feed');
-    if (!feed) return;
-    
-    feed.innerHTML = posts.map((post, idx) => `
-        <div class="p-4 border-b hover:bg-gray-50/50 transition">
-            <div class="flex items-center gap-2 mb-2">
-                <span class="font-bold text-gray-900">${post.user}</span>
-                <span class="text-gray-500 text-sm">@${post.handle}</span>
-                <span class="text-gray-400 text-xs">· ${new Date(post.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-            </div>
-            <p class="text-gray-800 whitespace-pre-wrap">${post.content}</p>
-            ${post.image ? `<img src="${post.image}" class="post-image">` : ''}
-            <div class="flex gap-8 mt-4">
-                <div class="action-btn comment" onclick="toggleComments(${idx})">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                    <span class="text-sm ml-1">${post.comments?.length || 0}</span>
-                </div>
-                <div class="action-btn repost" onclick="repost(${idx})">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                    <span class="text-sm ml-1">${post.reposts || 0}</span>
-                </div>
-                <div class="action-btn like" onclick="likePost(${idx})">
-                    <svg class="w-5 h-5" fill="${post.likedBy?.includes(currentUser.handle) ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
-                    <span class="text-sm ml-1">${post.likes || 0}</span>
-                </div>
-            </div>
-            <div id="comments-${idx}" class="hidden mt-4 space-y-3">
-                ${(post.comments || []).map(c => `
-                    <div class="comment-box">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="font-bold text-sm text-gray-900">${c.user}</span>
-                            <span class="text-gray-400 text-xs">@${c.handle}</span>
-                        </div>
-                        <p class="text-sm text-gray-700">${c.content}</p>
-                        ${c.image ? `<img src="${c.image}" class="comment-image">` : ''}
+    function renderPosts() {
+        const feed = document.getElementById('feed');
+        if (!feed) return;
+        
+        const sorted = [...posts].reverse();
+        feed.innerHTML = sorted.map(post => {
+            const realIdx = posts.indexOf(post);
+            return `
+            <div class="p-5 hover:bg-gray-50 transition group">
+                <div class="flex justify-between">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">${post.handle[0].toUpperCase()}</div>
+                        <span class="font-bold text-gray-900">@${post.handle}</span>
+                        <span class="text-gray-400 text-xs">${new Date(post.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                     </div>
-                `).join('')}
-                <div class="mt-3 flex gap-2">
-                    <input type="text" id="comm-text-${idx}" placeholder="Ваш ответ..." class="flex-1 bg-gray-100 rounded-full px-4 py-1 text-sm outline-none">
-                    <label class="cursor-pointer p-1 text-gray-400 hover:text-blue-500">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        <input type="file" class="hidden" onchange="attachCommPhoto(event, ${idx})">
-                    </label>
-                    <button onclick="addComment(${idx})" class="text-blue-500 font-bold text-sm px-2">OK</button>
                 </div>
-                <div id="comm-prev-${idx}" class="hidden text-[10px] text-blue-500 mt-1 ml-4">Изображение готово ✓</div>
-            </div>
-        </div>
-    `).reverse().join('');
-}
+                <p class="text-[17px] leading-relaxed text-gray-800 whitespace-pre-wrap">${post.content}</p>
+                ${post.image ? `<img src="${post.image}" class="post-image mt-3 border shadow-sm">` : ''}
+                
+                <div class="flex gap-10 mt-4">
+                    <button onclick="window.doLike(${realIdx})" class="flex items-center gap-1.5 transition ${post.likedBy?.includes(currentUser.handle) ? 'text-rose-500 font-bold' : 'text-gray-500 hover:text-rose-500'}">
+                        <span>${post.likedBy?.includes(currentUser.handle) ? '❤️' : '♡'}</span> ${post.likes || 0}
+                    </button>
+                    <button onclick="window.toggleComm(${realIdx})" class="flex items-center gap-1.5 text-gray-500 hover:text-blue-500 transition">
+                        <span>💬</span> ${post.comments?.length || 0}
+                    </button>
+                </div>
 
-function renderRecommendations() {
-    const list = document.getElementById('recommendations-list');
-    if (!list) return;
-    const others = users.filter(u => u.handle !== currentUser.handle).slice(0, 5);
-    list.innerHTML = others.length ? others.map(u => `
-        <div class="flex justify-between items-center mb-3">
-            <div><p class="font-bold text-sm text-gray-900">${u.name}</p><p class="text-xs text-gray-500">@${u.handle}</p></div>
-            <button class="bg-black text-white px-3 py-1 rounded-full text-xs font-bold hover:bg-gray-800 transition">Читать</button>
-        </div>
-    `).join('') : '<p class="text-xs text-gray-400">Пока никого нет</p>';
-}
-
-// --- Посты, Лайки, Комменты (Логика) ---
-document.getElementById('post-btn').onclick = () => {
-    const content = document.getElementById('post-content').value.trim();
-    if(!content && !selectedImageData) return;
-
-    posts.push({
-        user: currentUser.name, handle: currentUser.handle,
-        content, image: selectedImageData, date: new Date().toISOString(),
-        likes: 0, reposts: 0, comments: [], likedBy: []
-    });
-    
-    document.getElementById('post-content').value = '';
-    clearFile();
-    triggerFirework();
-    saveAndRefresh();
-};
-
-function likePost(idx) {
-    const post = posts[posts.length - 1 - idx];
-    if(!post.likedBy) post.likedBy = [];
-    if(post.likedBy.includes(currentUser.handle)) {
-        post.likes--;
-        post.likedBy = post.likedBy.filter(h => h !== currentUser.handle);
-    } else {
-        post.likes = (post.likes || 0) + 1;
-        post.likedBy.push(currentUser.handle);
-        triggerFirework();
+                <div id="comm-section-${realIdx}" class="hidden mt-4 pt-4 border-t border-gray-50">
+                    <div class="space-y-3 mb-4">
+                        ${(post.comments || []).map(c => `
+                            <div class="text-sm bg-gray-50 p-2 rounded-xl"><b class="text-blue-600">@${c.handle}:</b> ${c.text}</div>
+                        `).join('')}
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="comm-input-${realIdx}" class="flex-1 bg-gray-100 border-none rounded-full px-4 py-1.5 text-sm outline-none focus:ring-1 focus:ring-blue-300" placeholder="Ваш ответ...">
+                        <button onclick="window.doComment(${realIdx})" class="text-blue-500 font-bold text-sm px-2">OK</button>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
     }
-    saveAndRefresh();
-}
 
-function repost(idx) {
-    const post = posts[posts.length - 1 - idx];
-    post.reposts = (post.reposts || 0) + 1;
-    posts.push({
-        ...post,
-        user: `${currentUser.name} (Репост)`,
-        date: new Date().toISOString(),
-        likes: 0, reposts: 0, comments: [], likedBy: []
-    });
-    triggerFirework();
-    saveAndRefresh();
-}
+    function renderRecommendations() {
+        const list = document.getElementById('recommendations-list');
+        const others = users.filter(u => u.handle !== currentUser.handle).slice(0, 5);
+        
+        if (others.length === 0) {
+            list.innerHTML = `<p class="text-xs text-gray-400 italic">Зарегистрируйтесь, чтобы здесь кто-то появился</p>`;
+            return;
+        }
 
-function toggleComments(idx) {
-    const el = document.getElementById(`comments-${idx}`);
-    el.classList.toggle('hidden');
-}
+        list.innerHTML = others.map(u => `
+            <div class="flex justify-between items-center bg-gray-50 p-2 rounded-xl">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-[10px] font-bold">${u.handle[0].toUpperCase()}</div>
+                    <span class="text-sm font-bold">@${u.handle}</span>
+                </div>
+                <button class="bg-blue-500 text-white text-[10px] px-3 py-1 rounded-full font-bold hover:bg-blue-600 transition">Читать</button>
+            </div>
+        `).join('');
+    }
 
-let tempCommPhoto = null;
-function attachCommPhoto(e, idx) {
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-        tempCommPhoto = ev.target.result;
-        document.getElementById(`comm-prev-${idx}`).classList.remove('hidden');
+    // --- Глобальные функции ---
+    window.doLike = (idx) => {
+        const post = posts[idx];
+        if (!post.likedBy) post.likedBy = [];
+        if (post.likedBy.includes(currentUser.handle)) {
+            post.likes--;
+            post.likedBy = post.likedBy.filter(h => h !== currentUser.handle);
+        } else {
+            post.likes = (post.likes || 0) + 1;
+            post.likedBy.push(currentUser.handle);
+            window.triggerFirework();
+        }
+        save();
     };
-    reader.readAsDataURL(e.target.files[0]);
-}
 
-function addComment(idx) {
-    const post = posts[posts.length - 1 - idx];
-    const input = document.getElementById(`comm-text-${idx}`);
-    const text = input.value.trim();
-    if(!text && !tempCommPhoto) return;
+    window.toggleComm = (idx) => document.getElementById(`comm-section-${idx}`).classList.toggle('hidden');
 
-    if(!post.comments) post.comments = [];
-    post.comments.push({
-        user: currentUser.name, handle: currentUser.handle,
-        content: text, image: tempCommPhoto, date: new Date().toISOString()
-    });
+    window.doComment = (idx) => {
+        const input = document.getElementById(`comm-input-${idx}`);
+        if (!input.value.trim()) return;
+        if (!posts[idx].comments) posts[idx].comments = [];
+        posts[idx].comments.push({ handle: currentUser.handle, text: input.value.trim() });
+        input.value = '';
+        save();
+    };
 
-    input.value = '';
-    tempCommPhoto = null;
-    document.getElementById(`comm-prev-${idx}`).classList.add('hidden');
-    saveAndRefresh();
-}
+    const save = () => { localStorage.setItem('posts', JSON.stringify(posts)); renderPosts(); };
 
-function saveAndRefresh() {
-    localStorage.setItem('posts', JSON.stringify(posts));
-    renderPosts();
-}
+    // --- События ---
 
-// --- Обработка файлов ---
-const fileInput = document.getElementById('file-input');
-if (fileInput) {
-    fileInput.onchange = (e) => {
+    document.getElementById('post-btn').onclick = () => {
+        const content = document.getElementById('post-content').value.trim();
+        if (!content && !selectedImageData) return;
+        posts.push({
+            handle: currentUser.handle, content, image: selectedImageData,
+            date: new Date().toISOString(), likes: 0, likedBy: [], comments: []
+        });
+        document.getElementById('post-content').value = '';
+        selectedImageData = null;
+        document.getElementById('image-preview-container').classList.add('hidden');
+        window.triggerFirework();
+        save();
+    };
+
+    document.getElementById('file-input').onchange = (e) => {
         const reader = new FileReader();
         reader.onload = (ev) => {
             selectedImageData = ev.target.result;
@@ -271,13 +161,53 @@ if (fileInput) {
         };
         reader.readAsDataURL(e.target.files[0]);
     };
-}
 
-function clearFile() {
-    selectedImageData = null;
-    document.getElementById('image-preview-container').classList.add('hidden');
-    if (fileInput) fileInput.value = '';
-}
+    document.getElementById('clear-image-btn').onclick = () => {
+        selectedImageData = null;
+        document.getElementById('image-preview-container').classList.add('hidden');
+    };
 
-// Запуск при загрузке
-updateUI();
+    // --- Авторизация ---
+    const authModal = document.getElementById('auth-modal');
+    document.getElementById('main-auth-btn').onclick = () => {
+        if (!currentUser.isGuest) {
+            currentUser = { name: "Гость", handle: `guest${Math.floor(Math.random()*1000)}`, isGuest: true };
+            sessionStorage.removeItem('sessionUser');
+            updateUI();
+        } else authModal.classList.remove('hidden');
+    };
+
+    document.getElementById('auth-toggle').onclick = () => {
+        isLoginMode = !isLoginMode;
+        document.getElementById('modal-title').innerText = isLoginMode ? "С возвращением!" : "Создать аккаунт";
+        document.getElementById('auth-submit-btn').innerText = isLoginMode ? "Продолжить" : "Зарегистрироваться";
+        document.getElementById('auth-toggle').innerText = isLoginMode ? "Еще нет аккаунта? Регистрация" : "Уже есть аккаунт? Войти";
+    };
+
+    document.getElementById('auth-submit-btn').onclick = () => {
+        const login = document.getElementById('auth-user').value.trim();
+        const pass = document.getElementById('auth-pass').value.trim();
+        if (!login || !pass) return alert("Заполните поля!");
+
+        if (isLoginMode) {
+            const u = users.find(x => x.handle === login && x.password === pass);
+            if (u) {
+                currentUser = { name: u.name, handle: u.handle, isGuest: false };
+                sessionStorage.setItem('sessionUser', JSON.stringify(currentUser));
+                authModal.classList.add('hidden');
+                updateUI();
+            } else alert("Неверный вход!");
+        } else {
+            if (users.find(x => x.handle === login)) return alert("Логин занят!");
+            users.push({ name: login, handle: login, password: pass });
+            localStorage.setItem('users', JSON.stringify(users));
+            alert("Регистрация успешна!");
+            document.getElementById('auth-toggle').click();
+        }
+    };
+
+    document.getElementById('close-modal-btn').onclick = () => authModal.classList.add('hidden');
+
+    // Запуск
+    updateUI();
+});
