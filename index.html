@@ -2,65 +2,86 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cloud MicroBlog (Firebase)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cloud MicroBlog Mobile</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Конфигурация Tailwind для поддержки темной темы через класс
+        tailwind.config = { darkMode: 'class' }
+    </script>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <style>
         #fireworks-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 100; }
-        .post-card { transition: all 0.3s ease; }
-        .post-card:hover { background-color: #f9fafb; }
+        /* Плавный переход для темной темы */
+        body { transition: background-color 0.3s ease, color 0.3s ease; }
+        .post-card { border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .dark .post-card { border-bottom: 1px solid rgba(255,255,255,0.05); }
+        /* Скрытие скроллбара */
+        ::-webkit-scrollbar { width: 0; background: transparent; }
     </style>
 </head>
-<body class="bg-gray-100 font-sans">
+<body class="bg-gray-100 dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 font-sans">
     <canvas id="fireworks-canvas"></canvas>
 
-    <div class="max-w-5xl mx-auto flex justify-center gap-6 px-4">
-        <main class="w-full max-w-2xl bg-white min-h-screen shadow-lg">
-            <header class="border-b p-4 flex justify-between items-center sticky top-0 bg-white/90 backdrop-blur-md z-10">
-                <div>
-                    <h1 class="text-xl font-bold text-blue-500">Global MicroBlog</h1>
-                    <div id="user-info" class="text-xs text-gray-500">Загрузка профиля...</div>
+    <div class="max-w-5xl mx-auto flex justify-center gap-6">
+        <main class="w-full max-w-2xl bg-white dark:bg-zinc-800 min-h-screen shadow-lg sm:border-x dark:border-zinc-700">
+            
+            <header class="p-4 border-b dark:border-zinc-700 sticky top-0 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md z-10 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 transition">
+                        <span id="theme-icon-day">☀️</span>
+                        <span id="theme-icon-night" class="hidden">🌙</span>
+                    </button>
+                    <div>
+                        <h1 class="text-lg font-black text-blue-500 uppercase tracking-tighter">Micro</h1>
+                        <div id="user-info" class="text-[10px] opacity-50 font-bold uppercase">Облако...</div>
+                    </div>
                 </div>
-                <button id="main-auth-btn" class="border border-blue-500 text-blue-500 px-4 py-1 rounded-full text-sm font-bold hover:bg-blue-50 transition">Войти</button>
+                <button id="main-auth-btn" class="bg-blue-500 text-white px-5 py-1.5 rounded-full text-sm font-bold shadow-md active:scale-95 transition">Войти</button>
             </header>
 
-            <div class="p-4 border-b">
-                <textarea id="post-content" class="w-full p-2 border-none focus:ring-0 text-lg resize-none outline-none" placeholder="Что происходит?" rows="3"></textarea>
-                <div class="flex justify-end mt-3">
-                    <button id="post-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-full font-bold transition shadow-md">Постить для всех</button>
+            <div class="p-4 border-b dark:border-zinc-700">
+                <textarea id="post-content" class="w-full bg-transparent p-2 text-lg outline-none resize-none placeholder:text-gray-400" placeholder="Что нового?" rows="3"></textarea>
+                <div class="flex justify-end mt-2">
+                    <button id="post-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-8 py-2.5 rounded-full font-bold shadow-lg active:scale-90 transition w-full sm:w-auto">
+                        Постить
+                    </button>
                 </div>
             </div>
 
-            <div id="feed" class="divide-y divide-gray-100"></div>
+            <div id="feed"></div>
+            
+            <div id="loader" class="p-10 text-center opacity-20 text-sm">Загружаем ленту...</div>
         </main>
 
         <aside class="w-80 hidden lg:block py-4">
-            <div class="bg-white rounded-2xl p-4 shadow-sm border sticky top-4">
-                <h2 class="font-bold text-lg mb-4">Люди в сети</h2>
-                <div id="recommendations-list" class="space-y-4 text-sm text-gray-400">
-                    Ожидание других пользователей...
+            <div class="bg-white dark:bg-zinc-800 rounded-2xl p-5 shadow-sm border dark:border-zinc-700 sticky top-20">
+                <h2 class="font-bold text-lg mb-4">В сети</h2>
+                <div id="recommendations-list" class="space-y-4">
+                    <p class="text-xs opacity-50 italic">Загрузка пользователей...</p>
                 </div>
             </div>
         </aside>
     </div>
 
-    <div id="auth-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[110]">
-        <div class="bg-white p-8 rounded-2xl shadow-xl w-96">
-            <h2 id="modal-title" class="text-2xl font-bold mb-4 text-center">Вход в облако</h2>
-            <input type="text" id="auth-user" placeholder="Логин (handle)" class="w-full p-2 mb-3 border rounded-lg outline-none focus:border-blue-400">
-            <input type="password" id="auth-pass" placeholder="Пароль" class="w-full p-2 mb-4 border rounded-lg outline-none focus:border-blue-400">
-            <button id="auth-submit-btn" class="w-full bg-blue-500 text-white py-2 rounded-lg font-bold hover:bg-blue-600">Войти / Создать</button>
-            <button id="close-modal-btn" class="w-full mt-2 text-gray-400 text-sm">Отмена</button>
+    <div id="auth-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[110] p-4">
+        <div class="bg-white dark:bg-zinc-800 p-8 rounded-3xl shadow-2xl w-full max-w-sm">
+            <h2 id="modal-title" class="text-2xl font-black mb-6 text-center">Облачный вход</h2>
+            <input type="text" id="auth-user" placeholder="Логин" class="w-full p-4 mb-3 rounded-2xl bg-gray-100 dark:bg-zinc-700 outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="password" id="auth-pass" placeholder="Пароль" class="w-full p-4 mb-6 rounded-2xl bg-gray-100 dark:bg-zinc-700 outline-none focus:ring-2 focus:ring-blue-500">
+            <button id="auth-submit-btn" class="w-full bg-blue-500 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition">Войти / Создать</button>
+            <button id="close-modal-btn" class="w-full mt-4 text-gray-400 text-sm font-medium">Закрыть</button>
         </div>
     </div>
 
     <script>
+        // --- 1. FIREBASE CONFIG (Вставь свои ключи сюда) ---
         // 1. КОНФИГУРАЦИЯ FIREBASE (Вставь свои данные сюда!)
-    const firebaseConfig = {
+        const firebaseConfig = {
         apiKey: "AIzaSyALdLdIiC5Jwfkeo6gfa3OaHHm3gkQ3jtM",
         authDomain: "qiwi-8aa6a.firebaseapp.com",
         databaseURL: "https://qiwi-8aa6a-default-rtdb.firebaseio.com",
@@ -70,124 +91,134 @@
         appId: "G-6HWP543LDE"
         };
 
-        // Инициализация
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Текущий пользователь
-        let currentUser = JSON.parse(sessionStorage.getItem('sessionUser')) || { 
-            name: "Гость", 
-            handle: "guest" + Math.floor(Math.random()*1000), 
-            isGuest: true 
-        };
+        // --- 2. ТЕМНАЯ ТЕМА ---
+        const themeBtn = document.getElementById('theme-toggle');
+        const htmlEl = document.documentElement;
 
-        // --- РАБОТА С ПОСТАМИ (ОБЛАКО) ---
-
-        function sendPost() {
-            const content = document.getElementById('post-content').value.trim();
-            if (!content) return;
-
-            // Отправляем в Firebase
-            db.ref('posts').push({
-                handle: currentUser.handle,
-                content: content,
-                date: Date.now()
-            });
-
-            document.getElementById('post-content').value = "";
+        // Проверяем сохраненную тему
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            enableDarkMode();
         }
 
-        // Слушаем обновление ленты у всех пользователей
-        db.ref('posts').limitToLast(50).on('value', (snapshot) => {
+        themeBtn.onclick = () => {
+            htmlEl.classList.contains('dark') ? disableDarkMode() : enableDarkMode();
+        };
+
+        function enableDarkMode() {
+            htmlEl.classList.add('dark');
+            localStorage.theme = 'dark';
+            document.getElementById('theme-icon-day').classList.add('hidden');
+            document.getElementById('theme-icon-night').classList.remove('hidden');
+        }
+
+        function disableDarkMode() {
+            htmlEl.classList.remove('dark');
+            localStorage.theme = 'light';
+            document.getElementById('theme-icon-day').classList.remove('hidden');
+            document.getElementById('theme-icon-night').classList.add('hidden');
+        }
+
+        // --- 3. ЛОГИКА ПРИЛОЖЕНИЯ ---
+        let currentUser = JSON.parse(sessionStorage.getItem('sessionUser')) || { 
+            handle: "guest" + Math.floor(Math.random()*99), isGuest: true 
+        };
+
+        // Лента постов (Облако)
+        db.ref('posts').limitToLast(40).on('value', (snapshot) => {
+            document.getElementById('loader').classList.add('hidden');
             const data = snapshot.val();
             const feed = document.getElementById('feed');
             feed.innerHTML = "";
-            
             if (data) {
                 Object.values(data).reverse().forEach(post => {
                     feed.innerHTML += `
-                        <div class="post-card p-4 border-b">
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="font-bold text-blue-600">@${post.handle}</span>
-                                <span class="text-gray-400 text-xs">${new Date(post.date).toLocaleTimeString()}</span>
+                        <div class="post-card p-4 sm:p-6">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-8 h-8 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center font-bold text-xs">
+                                    ${post.handle[0].toUpperCase()}
+                                </div>
+                                <span class="font-bold text-sm">@${post.handle}</span>
+                                <span class="text-[10px] opacity-40 ml-auto">${new Date(post.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                             </div>
-                            <p class="text-gray-800">${post.content}</p>
+                            <p class="text-[16px] leading-relaxed opacity-90">${post.content}</p>
                         </div>
                     `;
                 });
             }
         });
 
-        // --- АККАУНТЫ И РЕКОМЕНДАЦИИ (ОБЛАКО) ---
-
-        // Слушаем список пользователей для рекомендаций
+        // Рекомендации (Облако)
         db.ref('users').on('value', (snapshot) => {
             const allUsers = snapshot.val();
-            const recList = document.getElementById('recommendations-list');
-            if (!recList) return;
-            
-            if (allUsers) {
-                recList.innerHTML = Object.values(allUsers)
+            const list = document.getElementById('recommendations-list');
+            if (allUsers && list) {
+                list.innerHTML = Object.values(allUsers)
                     .filter(u => u.handle !== currentUser.handle)
                     .map(u => `
-                        <div class="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
-                            <span class="font-medium text-gray-700">@${u.handle}</span>
-                            <button class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">Читать</button>
+                        <div class="flex items-center justify-between group">
+                            <span class="text-sm font-medium">@${u.handle}</span>
+                            <button class="text-[10px] bg-gray-100 dark:bg-zinc-700 px-3 py-1 rounded-full font-bold">ЧИТАТЬ</button>
                         </div>
-                    `).join('') || "Пока никого нет...";
+                    `).join('') || "<p class='text-xs opacity-30'>Вы первый в сети!</p>";
             }
         });
 
+        // Кнопка поста
+        document.getElementById('post-btn').onclick = () => {
+            const val = document.getElementById('post-content').value.trim();
+            if(!val) return;
+            db.ref('posts').push({
+                handle: currentUser.handle,
+                content: val,
+                date: Date.now()
+            });
+            document.getElementById('post-content').value = "";
+        };
+
         // Авторизация
         document.getElementById('auth-submit-btn').onclick = () => {
-            const login = document.getElementById('auth-user').value.trim();
+            const login = document.getElementById('auth-user').value.trim().toLowerCase();
             const pass = document.getElementById('auth-pass').value.trim();
-            if (!login || !pass) return alert("Заполни поля");
+            if(!login || !pass) return;
 
-            db.ref('users/' + login).once('value').then((snapshot) => {
-                const user = snapshot.val();
-                if (user) {
-                    // Если юзер есть — проверяем пароль
-                    if (user.password === pass) {
-                        loginUser(user);
-                    } else {
-                        alert("Неверный пароль");
-                    }
-                } else {
-                    // Если юзера нет — регистрируем (авто-регистрация для теста)
-                    const newUser = { name: login, handle: login, password: pass };
+            db.ref('users/' + login).once('value').then(snap => {
+                const user = snap.val();
+                if(user && user.password === pass) {
+                    loginAction(user);
+                } else if(!user) {
+                    const newUser = { handle: login, password: pass };
                     db.ref('users/' + login).set(newUser);
-                    loginUser(newUser);
+                    loginAction(newUser);
+                } else {
+                    alert("Ошибка входа!");
                 }
             });
         };
 
-        function loginUser(user) {
-            currentUser = { name: user.name, handle: user.handle, isGuest: false };
+        function loginAction(u) {
+            currentUser = { handle: u.handle, isGuest: false };
             sessionStorage.setItem('sessionUser', JSON.stringify(currentUser));
-            document.getElementById('auth-modal').classList.add('hidden');
-            updateUI();
+            location.reload();
         }
 
-        function updateUI() {
-            document.getElementById('user-info').innerText = `@${currentUser.handle} (${currentUser.isGuest ? 'Гость' : 'В сети'})`;
-            document.getElementById('main-auth-btn').innerText = currentUser.isGuest ? "Войти" : "Выйти";
-        }
-
-        // Кнопки интерфейса
-        document.getElementById('post-btn').onclick = sendPost;
         document.getElementById('main-auth-btn').onclick = () => {
-            if (!currentUser.isGuest) {
-                sessionStorage.removeItem('sessionUser');
+            if(!currentUser.isGuest) {
+                sessionStorage.clear();
                 location.reload();
             } else {
                 document.getElementById('auth-modal').classList.remove('hidden');
             }
         };
+
         document.getElementById('close-modal-btn').onclick = () => document.getElementById('auth-modal').classList.add('hidden');
 
-        // Старт
-        updateUI();
+        // UI
+        document.getElementById('user-info').innerText = currentUser.handle;
+        document.getElementById('main-auth-btn').innerText = currentUser.isGuest ? "Войти" : "Выйти";
     </script>
 </body>
 </html>
