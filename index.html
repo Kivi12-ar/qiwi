@@ -2,106 +2,114 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Global MicroBlog</title>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud MicroBlog (Firebase)</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="script.js"></script>
+
     <style>
-        .post-card { border-bottom: 1px solid #f0f0f0; padding: 20px; transition: 0.3s; }
-        .post-card:hover { background: #fcfcfc; }
         #fireworks-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 100; }
+        .post-card { transition: all 0.3s ease; }
+        .post-card:hover { background-color: #f9fafb; }
     </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-100 font-sans">
     <canvas id="fireworks-canvas"></canvas>
 
-    <div class="max-w-2xl mx-auto bg-white min-h-screen shadow-sm">
-        <header class="p-4 border-b sticky top-0 bg-white/90 backdrop-blur-md flex justify-between items-center z-10">
-            <h1 class="text-xl font-bold text-blue-500">Global Feed</h1>
-            <div id="user-display" class="text-sm font-bold text-gray-600"></div>
-        </header>
+    <div class="max-w-5xl mx-auto flex justify-center gap-6 px-4">
+        <main class="w-full max-w-2xl bg-white min-h-screen shadow-lg">
+            <header class="border-b p-4 flex justify-between items-center sticky top-0 bg-white/90 backdrop-blur-md z-10">
+                <div>
+                    <h1 class="text-xl font-bold text-blue-500">Global MicroBlog</h1>
+                    <div id="user-info" class="text-xs text-gray-500">Загрузка профиля...</div>
+                </div>
+                <button id="main-auth-btn" class="border border-blue-500 text-blue-500 px-4 py-1 rounded-full text-sm font-bold hover:bg-blue-50 transition">Войти</button>
+            </header>
 
-        <div class="p-4 border-b">
-            <textarea id="post-text" class="w-full text-lg outline-none resize-none" placeholder="Что происходит в мире?" rows="3"></textarea>
-            <div class="flex justify-end mt-2">
-                <button onclick="sendPost()" class="bg-blue-500 text-white px-6 py-2 rounded-full font-bold hover:bg-blue-600">Постить</button>
+            <div class="p-4 border-b">
+                <textarea id="post-content" class="w-full p-2 border-none focus:ring-0 text-lg resize-none outline-none" placeholder="Что происходит?" rows="3"></textarea>
+                <div class="flex justify-end mt-3">
+                    <button id="post-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-full font-bold transition shadow-md">Постить для всех</button>
+                </div>
             </div>
-        </div>
 
-        <div id="feed"></div>
+            <div id="feed" class="divide-y divide-gray-100"></div>
+        </main>
+
+        <aside class="w-80 hidden lg:block py-4">
+            <div class="bg-white rounded-2xl p-4 shadow-sm border sticky top-4">
+                <h2 class="font-bold text-lg mb-4">Люди в сети</h2>
+                <div id="recommendations-list" class="space-y-4 text-sm text-gray-400">
+                    Ожидание других пользователей...
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <div id="auth-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[110]">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-96">
+            <h2 id="modal-title" class="text-2xl font-bold mb-4 text-center">Вход в облако</h2>
+            <input type="text" id="auth-user" placeholder="Логин (handle)" class="w-full p-2 mb-3 border rounded-lg outline-none focus:border-blue-400">
+            <input type="password" id="auth-pass" placeholder="Пароль" class="w-full p-2 mb-4 border rounded-lg outline-none focus:border-blue-400">
+            <button id="auth-submit-btn" class="w-full bg-blue-500 text-white py-2 rounded-lg font-bold hover:bg-blue-600">Войти / Создать</button>
+            <button id="close-modal-btn" class="w-full mt-2 text-gray-400 text-sm">Отмена</button>
+        </div>
     </div>
 
     <script>
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyALdLdIiC5Jwfkeo6gfa3OaHHm3gkQ3jtM",
-    authDomain: "qiwi-8aa6a.firebaseapp.com",
-    databaseURL: "https://qiwi-8aa6a-default-rtdb.firebaseio.com",
-    projectId: "qiwi-8aa6a",
-    storageBucket: "qiwi-8aa6a.firebasestorage.app",
-    messagingSenderId: "12192651267",
-    appId: "1:12192651267:web:73e98c5c764a19e3d2d636",
-    measurementId: "<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-
-<script src="script.js"></script>"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
+        // 1. КОНФИГУРАЦИЯ FIREBASE (Вставь свои данные сюда!)
+    const firebaseConfig = {
+        apiKey: "AIzaSyALdLdIiC5Jwfkeo6gfa3OaHHm3gkQ3jtM",
+        authDomain: "qiwi-8aa6a.firebaseapp.com",
+        databaseURL: "https://qiwi-8aa6a-default-rtdb.firebaseio.com",
+        projectId: "qiwi-8aa6a",
+        storageBucket: "qiwi-8aa6a.firebasestorage.app",
+        messagingSenderId: "1:12192651267:web:73e98c5c764a19e3d2d636",
+        appId: "G-6HWP543LDE"
+        };
 
         // Инициализация
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Данные текущего пользователя (локально для ника)
-        const myName = "Юзер_" + Math.floor(Math.random() * 1000);
-        document.getElementById('user-display').innerText = myName;
+        // Текущий пользователь
+        let currentUser = JSON.parse(sessionStorage.getItem('sessionUser')) || { 
+            name: "Гость", 
+            handle: "guest" + Math.floor(Math.random()*1000), 
+            isGuest: true 
+        };
 
-        // --- 3. ФУНКЦИЯ ОТПРАВКИ В ОБЛАКО ---
+        // --- РАБОТА С ПОСТАМИ (ОБЛАКО) ---
+
         function sendPost() {
-            const text = document.getElementById('post-text').value.trim();
-            if (!text) return;
+            const content = document.getElementById('post-content').value.trim();
+            if (!content) return;
 
-            // push() отправляет данные на сервер Google
+            // Отправляем в Firebase
             db.ref('posts').push({
-                username: myName,
-                content: text,
-                timestamp: Date.now()
+                handle: currentUser.handle,
+                content: content,
+                date: Date.now()
             });
 
-            document.getElementById('post-text').value = "";
-            triggerFirework();
+            document.getElementById('post-content').value = "";
         }
 
-        // --- 4. ПОЛУЧЕНИЕ ДАННЫХ В РЕАЛЬНОМ ВРЕМЕНИ ---
-        // Эта функция срабатывает САМА, когда кто-то другой пишет пост
+        // Слушаем обновление ленты у всех пользователей
         db.ref('posts').limitToLast(50).on('value', (snapshot) => {
             const data = snapshot.val();
             const feed = document.getElementById('feed');
             feed.innerHTML = "";
-
+            
             if (data) {
-                // Превращаем объект в массив и сортируем (новые сверху)
-                const posts = Object.values(data).reverse();
-                
-                posts.forEach(post => {
+                Object.values(data).reverse().forEach(post => {
                     feed.innerHTML += `
-                        <div class="post-card">
+                        <div class="post-card p-4 border-b">
                             <div class="flex items-center gap-2 mb-1">
-                                <span class="font-bold">@${post.username}</span>
-                                <span class="text-gray-400 text-xs">${new Date(post.timestamp).toLocaleTimeString()}</span>
+                                <span class="font-bold text-blue-600">@${post.handle}</span>
+                                <span class="text-gray-400 text-xs">${new Date(post.date).toLocaleTimeString()}</span>
                             </div>
                             <p class="text-gray-800">${post.content}</p>
                         </div>
@@ -110,32 +118,76 @@
             }
         });
 
-        // Простой салют для красоты
-        const canvas = document.getElementById('fireworks-canvas');
-        const ctx = canvas.getContext('2d');
-        let parts = [];
-        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-        window.onresize = resize; resize();
+        // --- АККАУНТЫ И РЕКОМЕНДАЦИИ (ОБЛАКО) ---
 
-        function triggerFirework() {
-            for(let i=0; i<20; i++) parts.push({
-                x: canvas.width/2, y: canvas.height/2,
-                v: {x: (Math.random()-0.5)*10, y: (Math.random()-0.5)*10},
-                a: 1
+        // Слушаем список пользователей для рекомендаций
+        db.ref('users').on('value', (snapshot) => {
+            const allUsers = snapshot.val();
+            const recList = document.getElementById('recommendations-list');
+            if (!recList) return;
+            
+            if (allUsers) {
+                recList.innerHTML = Object.values(allUsers)
+                    .filter(u => u.handle !== currentUser.handle)
+                    .map(u => `
+                        <div class="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
+                            <span class="font-medium text-gray-700">@${u.handle}</span>
+                            <button class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">Читать</button>
+                        </div>
+                    `).join('') || "Пока никого нет...";
+            }
+        });
+
+        // Авторизация
+        document.getElementById('auth-submit-btn').onclick = () => {
+            const login = document.getElementById('auth-user').value.trim();
+            const pass = document.getElementById('auth-pass').value.trim();
+            if (!login || !pass) return alert("Заполни поля");
+
+            db.ref('users/' + login).once('value').then((snapshot) => {
+                const user = snapshot.val();
+                if (user) {
+                    // Если юзер есть — проверяем пароль
+                    if (user.password === pass) {
+                        loginUser(user);
+                    } else {
+                        alert("Неверный пароль");
+                    }
+                } else {
+                    // Если юзера нет — регистрируем (авто-регистрация для теста)
+                    const newUser = { name: login, handle: login, password: pass };
+                    db.ref('users/' + login).set(newUser);
+                    loginUser(newUser);
+                }
             });
+        };
+
+        function loginUser(user) {
+            currentUser = { name: user.name, handle: user.handle, isGuest: false };
+            sessionStorage.setItem('sessionUser', JSON.stringify(currentUser));
+            document.getElementById('auth-modal').classList.add('hidden');
+            updateUI();
         }
 
-        function anim() {
-            ctx.clearRect(0,0,canvas.width,canvas.height);
-            parts.forEach((p,i) => {
-                p.x += p.v.x; p.y += p.v.y; p.a -= 0.02;
-                ctx.globalAlpha = p.a; ctx.fillStyle = 'orange';
-                ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, 7); ctx.fill();
-                if(p.a <= 0) parts.splice(i,1);
-            });
-            requestAnimationFrame(anim);
+        function updateUI() {
+            document.getElementById('user-info').innerText = `@${currentUser.handle} (${currentUser.isGuest ? 'Гость' : 'В сети'})`;
+            document.getElementById('main-auth-btn').innerText = currentUser.isGuest ? "Войти" : "Выйти";
         }
-        anim();
+
+        // Кнопки интерфейса
+        document.getElementById('post-btn').onclick = sendPost;
+        document.getElementById('main-auth-btn').onclick = () => {
+            if (!currentUser.isGuest) {
+                sessionStorage.removeItem('sessionUser');
+                location.reload();
+            } else {
+                document.getElementById('auth-modal').classList.remove('hidden');
+            }
+        };
+        document.getElementById('close-modal-btn').onclick = () => document.getElementById('auth-modal').classList.add('hidden');
+
+        // Старт
+        updateUI();
     </script>
 </body>
 </html>
