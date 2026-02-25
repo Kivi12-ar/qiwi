@@ -1,11 +1,65 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // --- Инициализация ---
-    let users = JSON.parse(localStorage.getItem('users')) || [];
-    let posts = JSON.parse(localStorage.getItem('posts')) || [];
-    let currentUser = JSON.parse(sessionStorage.getItem('sessionUser')) || { name: "Гость", handle: `guest${Math.floor(Math.random()*1000)}`, isGuest: true };
-    let selectedImageData = null;
-    let isLoginMode = true;
+const firebaseConfig = {
+    apiKey: "AIzaSyALdLdIiC5Jwfkeo6gfa3OaHHm3gkQ3jtM",
+    authDomain: "qiwi-8aa6a.firebaseapp.com",
+    databaseURL: "https://qiwi-8aa6a-default-rtdb.firebaseio.com",
+    projectId: "qiwi-8aa6a",
+    storageBucket: "qiwi-8aa6a.firebasestorage.app",
+    messagingSenderId: "1:12192651267:web:73e98c5c764a19e3d2d636",
+    appId: "G-6HWP543LDE"
+};
 
+
+// --- 2. ИНИЦИАЛИЗАЦИЯ ---
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// Создаем имя пользователя для текущей сессии
+const myHandle = "user_" + Math.floor(Math.random() * 1000);
+
+// --- 3. ФУНКЦИЯ ОТПРАВКИ ПОСТА ---
+function sendPost() {
+    const textarea = document.getElementById('post-content'); // ID твоего текстового поля
+    const text = textarea.value.trim();
+
+    if (text !== "") {
+        // Записываем в облачную базу данных
+        db.ref('all_posts').push({
+            handle: myHandle,
+            content: text,
+            date: Date.now()
+        });
+        
+        textarea.value = ""; // Очищаем поле
+    }
+}
+
+// Привязываем функцию к кнопке (проверь ID кнопки в HTML)
+document.getElementById('post-btn').onclick = sendPost;
+
+// --- 4. ПОЛУЧЕНИЕ ПОСТОВ В РЕАЛЬНОМ ВРЕМЕНИ ---
+// Это самая важная часть: она следит за облаком. 
+// Как только кто-то (ты или другой человек) добавит пост, лента обновится у ВСЕХ.
+db.ref('all_posts').on('value', (snapshot) => {
+    const data = snapshot.val();
+    const feed = document.getElementById('feed'); // ID контейнера ленты
+    feed.innerHTML = ""; // Очищаем перед обновлением
+
+    if (data) {
+        // Превращаем объект из базы в массив и переворачиваем (новые сверху)
+        const posts = Object.values(data).reverse();
+
+        posts.forEach(post => {
+            const postHTML = 
+                <div style="border-bottom: 1px solid #eee; padding: 15px;">
+                    <b style="color: #1d9bf0;">@${post.handle}</b>
+                    <p>${post.content}</p>
+                    <small style="color: gray;">${new Date(post.date).toLocaleTimeString()}</small>
+                </div>
+            ;
+            feed.insertAdjacentHTML('beforeend', postHTML);
+        });
+    }
+});
     // --- Салюты (Canvas) ---
     const canvas = document.getElementById('fireworks-canvas');
     const ctx = canvas.getContext('2d');
