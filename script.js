@@ -1,10 +1,17 @@
-// --- Инициализация ---
+// --- Инициализация данных ---
 let users = JSON.parse(localStorage.getItem('users')) || [];
 let posts = JSON.parse(localStorage.getItem('posts')) || [];
-let currentUser = JSON.parse(sessionStorage.getItem('sessionUser')) || { name: "Гость", handle: "guest"+Math.floor(Math.random()*1000), isGuest: true };
+let currentUser = JSON.parse(sessionStorage.getItem('sessionUser')) || createGuest();
 let selectedImageData = null;
+let isLoginMode = true;
 
-// --- Фейерверки (упрощенная версия) ---
+// --- Элементы DOM ---
+const authModal = document.getElementById('auth-modal');
+const mainAuthBtn = document.getElementById('main-auth-btn');
+const authSubmitBtn = document.getElementById('auth-submit-btn');
+const authToggle = document.getElementById('auth-toggle');
+
+// --- Движок фейерверков (Canvas) ---
 const canvas = document.getElementById('fireworks-canvas');
 const ctx = canvas.getContext('2d');
 let particles = [];
@@ -32,75 +39,171 @@ function animate() {
 }
 animate();
 
-// --- Функции постов ---
+// --- Управление пользователями ---
+function createGuest() {
+    const id = Math.floor(Math.random()*9000)+1000;
+    return { name: `Гость_${id}`, handle: `guest${id}`, isGuest: true };
+}
 
+function updateUI() {
+    const userInfo = document.getElementById('user-info');
+    if (userInfo) {
+        userInfo.innerHTML = `Вы: <b>${currentUser.name}</b> ${currentUser.isGuest ? '<span class="guest-badge">Guest</span>' : '<span class="user-badge">User</span>'}`;
+    }
+    if (mainAuthBtn) {
+        mainAuthBtn.innerText = currentUser.isGuest ? "Войти" : "Выйти";
+    }
+    renderPosts();
+    renderRecommendations();
+}
+
+// --- Логика Авторизации (Исправлено) ---
+if (mainAuthBtn) {
+    mainAuthBtn.onclick = () => {
+        if (!currentUser.isGuest) {
+            // Выход
+            currentUser = createGuest();
+            sessionStorage.removeItem('sessionUser');
+            updateUI();
+        } else {
+            // Открыть модалку
+            authModal.classList.remove('hidden');
+        }
+    };
+}
+
+function closeModal() {
+    authModal.classList.add('hidden');
+}
+
+if (authToggle) {
+    authToggle.onclick = () => {
+        isLoginMode = !isLoginMode;
+        document.getElementById('modal-title').innerText = isLoginMode ? "Вход" : "Регистрация";
+        authToggle.innerText = isLoginMode ? "Нет аккаунта? Регистрация" : "Уже есть аккаунт? Войти";
+        authSubmitBtn.innerText = isLoginMode ? "Войти" : "Создать аккаунт";
+    };
+}
+
+if (authSubmitBtn) {
+    authSubmitBtn.onclick = () => {
+        const login = document.getElementById('auth-user').value.trim();
+        const pass = document.getElementById('auth-pass').value.trim();
+        if (!login || !pass) return alert("Введите данные");
+
+        if (isLoginMode) {
+            const user = users.find(u => u.handle === login && u.password === pass);
+            if (user) {
+                currentUser = { name: user.name, handle: user.handle, isGuest: false };
+                sessionStorage.setItem('sessionUser', JSON.stringify(currentUser));
+                closeModal();
+                updateUI();
+            } else {
+                alert("Неверный логин или пароль");
+            }
+        } else {
+            if (users.find(u => u.handle === login)) return alert("Логин занят");
+            users.push({ name: login, handle: login, password: pass });
+            localStorage.setItem('users', JSON.stringify(users));
+            alert("Регистрация успешна! Теперь войдите.");
+            isLoginMode = true;
+            authToggle.click();
+        }
+    };
+}
+
+// --- Посты и Комментарии ---
 function renderPosts() {
     const feed = document.getElementById('feed');
+    if (!feed) return;
+    
     feed.innerHTML = posts.map((post, idx) => `
         <div class="p-4 border-b hover:bg-gray-50/50 transition">
             <div class="flex items-center gap-2 mb-2">
-                <span class="font-bold">${post.user}</span>
+                <span class="font-bold text-gray-900">${post.user}</span>
                 <span class="text-gray-500 text-sm">@${post.handle}</span>
-                <span class="text-gray-400 text-xs">· ${new Date(post.date).toLocaleTimeString()}</span>
+                <span class="text-gray-400 text-xs">· ${new Date(post.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
             </div>
-            
             <p class="text-gray-800 whitespace-pre-wrap">${post.content}</p>
             ${post.image ? `<img src="${post.image}" class="post-image">` : ''}
-
             <div class="flex gap-8 mt-4">
                 <div class="action-btn comment" onclick="toggleComments(${idx})">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                    <span class="text-sm">${post.comments?.length || 0}</span>
+                    <span class="text-sm ml-1">${post.comments?.length || 0}</span>
                 </div>
                 <div class="action-btn repost" onclick="repost(${idx})">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                    <span class="text-sm">${post.reposts || 0}</span>
+                    <span class="text-sm ml-1">${post.reposts || 0}</span>
                 </div>
                 <div class="action-btn like" onclick="likePost(${idx})">
                     <svg class="w-5 h-5" fill="${post.likedBy?.includes(currentUser.handle) ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
-                    <span class="text-sm">${post.likes || 0}</span>
+                    <span class="text-sm ml-1">${post.likes || 0}</span>
                 </div>
             </div>
-
             <div id="comments-${idx}" class="hidden mt-4 space-y-3">
                 ${(post.comments || []).map(c => `
                     <div class="comment-box">
                         <div class="flex items-center gap-2 mb-1">
-                            <span class="font-bold text-sm">${c.user}</span>
+                            <span class="font-bold text-sm text-gray-900">${c.user}</span>
                             <span class="text-gray-400 text-xs">@${c.handle}</span>
                         </div>
                         <p class="text-sm text-gray-700">${c.content}</p>
                         ${c.image ? `<img src="${c.image}" class="comment-image">` : ''}
                     </div>
                 `).join('')}
-                
                 <div class="mt-3 flex gap-2">
-                    <input type="text" id="comm-text-${idx}" placeholder="Ваш ответ..." class="flex-1 bg-gray-100 rounded-full px-4 py-1 text-sm outline-none focus:ring-1 focus:ring-blue-400">
+                    <input type="text" id="comm-text-${idx}" placeholder="Ваш ответ..." class="flex-1 bg-gray-100 rounded-full px-4 py-1 text-sm outline-none">
                     <label class="cursor-pointer p-1 text-gray-400 hover:text-blue-500">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                         <input type="file" class="hidden" onchange="attachCommPhoto(event, ${idx})">
                     </label>
-                    <button onclick="addComment(${idx})" class="text-blue-500 font-bold text-sm px-2">Отправить</button>
+                    <button onclick="addComment(${idx})" class="text-blue-500 font-bold text-sm px-2">OK</button>
                 </div>
-                <div id="comm-prev-${idx}" class="hidden text-xs text-blue-500 mt-1">Фото прикреплено ✓</div>
+                <div id="comm-prev-${idx}" class="hidden text-[10px] text-blue-500 mt-1 ml-4">Изображение готово ✓</div>
             </div>
         </div>
     `).reverse().join('');
 }
 
-// --- Логика действий ---
+function renderRecommendations() {
+    const list = document.getElementById('recommendations-list');
+    if (!list) return;
+    const others = users.filter(u => u.handle !== currentUser.handle).slice(0, 5);
+    list.innerHTML = others.length ? others.map(u => `
+        <div class="flex justify-between items-center mb-3">
+            <div><p class="font-bold text-sm text-gray-900">${u.name}</p><p class="text-xs text-gray-500">@${u.handle}</p></div>
+            <button class="bg-black text-white px-3 py-1 rounded-full text-xs font-bold hover:bg-gray-800 transition">Читать</button>
+        </div>
+    `).join('') : '<p class="text-xs text-gray-400">Пока никого нет</p>';
+}
+
+// --- Посты, Лайки, Комменты (Логика) ---
+document.getElementById('post-btn').onclick = () => {
+    const content = document.getElementById('post-content').value.trim();
+    if(!content && !selectedImageData) return;
+
+    posts.push({
+        user: currentUser.name, handle: currentUser.handle,
+        content, image: selectedImageData, date: new Date().toISOString(),
+        likes: 0, reposts: 0, comments: [], likedBy: []
+    });
+    
+    document.getElementById('post-content').value = '';
+    clearFile();
+    triggerFirework();
+    saveAndRefresh();
+};
 
 function likePost(idx) {
     const post = posts[posts.length - 1 - idx];
     if(!post.likedBy) post.likedBy = [];
-    
     if(post.likedBy.includes(currentUser.handle)) {
         post.likes--;
         post.likedBy = post.likedBy.filter(h => h !== currentUser.handle);
     } else {
         post.likes = (post.likes || 0) + 1;
         post.likedBy.push(currentUser.handle);
-        triggerFirework(); // Салют при лайке!
+        triggerFirework();
     }
     saveAndRefresh();
 }
@@ -108,15 +211,12 @@ function likePost(idx) {
 function repost(idx) {
     const post = posts[posts.length - 1 - idx];
     post.reposts = (post.reposts || 0) + 1;
-    
-    // Создаем новый пост как репост
     posts.push({
         ...post,
         user: `${currentUser.name} (Репост)`,
         date: new Date().toISOString(),
         likes: 0, reposts: 0, comments: [], likedBy: []
     });
-    
     triggerFirework();
     saveAndRefresh();
 }
@@ -138,19 +238,19 @@ function attachCommPhoto(e, idx) {
 
 function addComment(idx) {
     const post = posts[posts.length - 1 - idx];
-    const text = document.getElementById(`comm-text-${idx}`).value;
+    const input = document.getElementById(`comm-text-${idx}`);
+    const text = input.value.trim();
     if(!text && !tempCommPhoto) return;
 
     if(!post.comments) post.comments = [];
     post.comments.push({
-        user: currentUser.name,
-        handle: currentUser.handle,
-        content: text,
-        image: tempCommPhoto,
-        date: new Date().toISOString()
+        user: currentUser.name, handle: currentUser.handle,
+        content: text, image: tempCommPhoto, date: new Date().toISOString()
     });
 
+    input.value = '';
     tempCommPhoto = null;
+    document.getElementById(`comm-prev-${idx}`).classList.add('hidden');
     saveAndRefresh();
 }
 
@@ -159,44 +259,25 @@ function saveAndRefresh() {
     renderPosts();
 }
 
-// --- Остальная логика (пост, файлы, вход) ---
-
-document.getElementById('post-btn').onclick = () => {
-    const content = document.getElementById('post-content').value;
-    if(!content && !selectedImageData) return;
-
-    posts.push({
-        user: currentUser.name, handle: currentUser.handle,
-        content, image: selectedImageData, date: new Date().toISOString(),
-        likes: 0, reposts: 0, comments: [], likedBy: []
-    });
-    
-    document.getElementById('post-content').value = '';
-    selectedImageData = null;
-    document.getElementById('image-preview-container').classList.add('hidden');
-    triggerFirework();
-    saveAndRefresh();
-};
-
+// --- Обработка файлов ---
 const fileInput = document.getElementById('file-input');
-fileInput.onchange = (e) => {
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-        selectedImageData = ev.target.result;
-        document.getElementById('image-preview').src = selectedImageData;
-        document.getElementById('image-preview-container').classList.remove('hidden');
+if (fileInput) {
+    fileInput.onchange = (e) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            selectedImageData = ev.target.result;
+            document.getElementById('image-preview').src = selectedImageData;
+            document.getElementById('image-preview-container').classList.remove('hidden');
+        };
+        reader.readAsDataURL(e.target.files[0]);
     };
-    reader.readAsDataURL(e.target.files[0]);
-};
+}
 
 function clearFile() {
     selectedImageData = null;
     document.getElementById('image-preview-container').classList.add('hidden');
+    if (fileInput) fileInput.value = '';
 }
 
-// Запуск
-updateUI(); // включает renderPosts
-function updateUI() {
-    document.getElementById('user-info').innerHTML = `Вы: <b>${currentUser.name}</b>`;
-    renderPosts();
-}
+// Запуск при загрузке
+updateUI();
