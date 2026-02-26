@@ -2,8 +2,8 @@
 <html lang="ru" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <title>MicroBlog Ultimate</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MicroBlog Final</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>tailwind.config = { darkMode: 'class' }</script>
     
@@ -14,8 +14,9 @@
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .post-img { max-height: 400px; width: 100%; object-fit: cover; border-radius: 1.5rem; margin-top: 12px; }
-        .avatar-circle { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: #3b82f6; flex-shrink: 0; }
-        .repost-box { border-left: 3px solid #3b82f6; padding-left: 12px; margin-top: 10px; background: rgba(59, 130, 246, 0.05); border-radius: 0 10px 10px 0; }
+        .avatar-main { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: #3b82f6; flex-shrink: 0; }
+        .repost-card { border: 1px solid rgba(59, 130, 246, 0.3); padding: 10px; margin-top: 10px; border-radius: 1rem; background: rgba(59, 130, 246, 0.03); }
+        body { padding-bottom: 70px; } /* Отступ под нижнее меню */
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-all">
@@ -24,84 +25,83 @@
         <main class="w-full max-w-2xl bg-white dark:bg-zinc-800 min-h-screen shadow-2xl sm:border-x dark:border-zinc-700">
             
             <header class="p-4 border-b dark:border-zinc-700 sticky top-0 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md z-40 flex justify-between items-center">
-                <div class="flex items-center gap-4">
-                    <h1 class="text-2xl font-black text-blue-500 italic">M.</h1>
-                    <button id="theme-toggle" class="hover:scale-110 transition">🌓</button>
-                </div>
+                <h1 class="text-2xl font-black text-blue-500 italic">M.</h1>
                 <div class="flex items-center gap-3">
-                    <div class="text-right">
-                        <div id="user-display" class="text-sm font-bold">Гость</div>
-                        <button id="open-settings" class="text-[10px] text-blue-500 font-black hidden uppercase">Профиль ⚙️</button>
-                    </div>
-                    <img id="my-avatar-nav" src="https://ui-avatars.com/api/?name=?" class="w-10 h-10 rounded-full border dark:border-zinc-600 hidden">
-                    <button id="auth-btn" class="bg-blue-500 text-white px-5 py-2 rounded-full text-xs font-black uppercase tracking-tight shadow-lg shadow-blue-500/20">Войти</button>
+                    <button id="open-settings" class="hidden text-xs font-black uppercase text-blue-500">Профиль ⚙️</button>
+                    <img id="nav-avatar" src="" class="w-10 h-10 rounded-full border dark:border-zinc-700 hidden">
+                    <button id="auth-btn" class="bg-blue-500 text-white px-4 py-2 rounded-full text-xs font-black uppercase shadow-lg">Войти</button>
                 </div>
             </header>
 
-            <div id="post-area" class="p-4 border-b dark:border-zinc-700 hidden">
-                <div class="flex gap-3">
-                    <img id="my-avatar-post" src="" class="avatar-circle">
-                    <div class="w-full">
-                        <textarea id="post-text" class="w-full bg-transparent text-lg outline-none resize-none pt-2" placeholder="Что происходит?" rows="3"></textarea>
-                        
-                        <div id="preview-box" class="hidden relative my-3">
-                            <img id="img-preview" src="" class="rounded-2xl max-h-60 w-full object-cover">
-                            <button onclick="clearImg()" class="absolute top-2 right-2 bg-black/60 text-white w-8 h-8 rounded-full">✕</button>
-                        </div>
-
-                        <div class="flex justify-between items-center pt-3 border-t dark:border-zinc-700">
-                            <label class="cursor-pointer text-blue-500 hover:bg-blue-50 dark:hover:bg-zinc-700 p-2 rounded-full transition">
-                                🖼️ <input type="file" id="file-input" class="hidden" accept="image/*">
-                            </label>
-                            <button id="send-btn" class="bg-blue-500 text-white px-8 py-2 rounded-full font-bold active:scale-95 transition shadow-lg shadow-blue-500/30">Опубликовать</button>
-                        </div>
+            <section id="view-feed">
+                <div id="post-area" class="p-4 border-b dark:border-zinc-700 hidden">
+                    <textarea id="post-text" class="w-full bg-transparent text-lg outline-none resize-none" placeholder="Что нового?" rows="3"></textarea>
+                    <div id="preview-box" class="hidden relative my-3">
+                        <img id="img-preview" src="" class="rounded-2xl max-h-60 w-full object-cover">
+                        <button onclick="clearImg()" class="absolute top-2 right-2 bg-black/60 text-white w-8 h-8 rounded-full">✕</button>
+                    </div>
+                    <div class="flex justify-between items-center pt-3 border-t dark:border-zinc-700">
+                        <label class="cursor-pointer text-blue-500 p-2">🖼️ <input type="file" id="file-input" class="hidden" accept="image/*"></label>
+                        <button id="send-btn" class="bg-blue-500 text-white px-6 py-2 rounded-full font-bold shadow-lg">Постить</button>
                     </div>
                 </div>
-            </div>
+                <div id="feed" class="divide-y dark:divide-zinc-700"></div>
+            </section>
 
-            <div id="feed" class="divide-y dark:divide-zinc-700"></div>
+            <section id="view-people" class="hidden p-4">
+                <h2 class="text-xl font-black mb-4">Интересные люди</h2>
+                <div id="rec-list-mobile" class="space-y-4"></div>
+            </section>
         </main>
 
         <aside class="w-80 hidden lg:block py-6">
             <div class="bg-white dark:bg-zinc-800 p-6 rounded-[2rem] shadow-sm border dark:border-zinc-700 sticky top-24">
-                <h3 class="font-black text-xs uppercase opacity-40 mb-5 tracking-widest">Кто в сети</h3>
-                <div id="rec-list" class="space-y-5"></div>
+                <h3 class="font-black text-xs uppercase opacity-40 mb-5">Рекомендации</h3>
+                <div id="rec-list-desktop" class="space-y-5"></div>
             </div>
         </aside>
     </div>
 
-    <div id="settings-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-zinc-800 p-8 rounded-[2.5rem] w-full max-w-sm text-center">
-            <h2 class="text-2xl font-black mb-6">Ваш профиль</h2>
-            
-            <div class="relative w-24 h-24 mx-auto mb-6">
-                <img id="settings-avatar-pre" src="" class="w-24 h-24 rounded-full object-cover border-4 border-blue-500">
-                <label class="absolute bottom-0 right-0 bg-blue-500 text-white p-2 rounded-full cursor-pointer shadow-lg">
-                    📷 <input type="file" id="avatar-input" class="hidden" accept="image/*">
-                </label>
-            </div>
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md border-t dark:border-zinc-700 flex justify-around p-3 z-50">
+        <button onclick="switchTab('feed')" class="flex flex-col items-center gap-1">
+            <span class="text-xl">🏠</span>
+            <span class="text-[10px] font-bold uppercase">Лента</span>
+        </button>
+        <button onclick="switchTab('people')" class="flex flex-col items-center gap-1">
+            <span class="text-xl">👥</span>
+            <span class="text-[10px] font-bold uppercase">Люди</span>
+        </button>
+        <button id="theme-toggle" class="flex flex-col items-center gap-1">
+            <span class="text-xl">🌓</span>
+            <span class="text-[10px] font-bold uppercase">Тема</span>
+        </button>
+    </nav>
 
-            <input type="text" id="new-nickname" placeholder="Никнейм" class="w-full p-4 rounded-2xl mb-4 bg-zinc-100 dark:bg-zinc-700 outline-none font-bold">
-            <button id="save-settings" class="w-full bg-blue-500 text-white py-4 rounded-2xl font-bold shadow-xl">Сохранить всё</button>
-            <button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="mt-4 text-sm opacity-40 font-bold uppercase">Позже</button>
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-zinc-800 p-8 rounded-[2.5rem] w-full max-w-sm text-center">
+            <div class="relative w-24 h-24 mx-auto mb-6">
+                <img id="set-av-pre" src="" class="w-24 h-24 rounded-full object-cover border-4 border-blue-500">
+                <label class="absolute bottom-0 right-0 bg-blue-500 text-white p-2 rounded-full cursor-pointer">📷 <input type="file" id="av-input" class="hidden"></label>
+            </div>
+            <input type="text" id="new-nick" placeholder="Никнейм" class="w-full p-4 rounded-2xl mb-4 bg-zinc-100 dark:bg-zinc-700 outline-none font-bold">
+            <button id="save-set" class="w-full bg-blue-500 text-white py-4 rounded-2xl font-bold shadow-xl">Сохранить</button>
+            <button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="mt-4 text-xs opacity-40 font-bold uppercase tracking-widest">Закрыть</button>
         </div>
     </div>
 
     <div id="auth-modal" class="hidden fixed inset-0 bg-black/80 z-[110] flex items-center justify-center p-4">
         <div class="bg-white dark:bg-zinc-800 p-10 rounded-[3rem] w-full max-w-sm">
-            <h2 id="auth-title" class="text-3xl font-black mb-8 text-center tracking-tighter">Присоединяйся</h2>
-            <div id="reg-only">
-                <input type="text" id="reg-nick" placeholder="Твой ник" class="w-full p-4 mb-3 rounded-2xl bg-zinc-100 dark:bg-zinc-700 outline-none border-none">
-            </div>
-            <input type="email" id="email" placeholder="Email" class="w-full p-4 mb-3 rounded-2xl bg-zinc-100 dark:bg-zinc-700 outline-none border-none">
-            <input type="password" id="pass" placeholder="Пароль" class="w-full p-4 mb-8 rounded-2xl bg-zinc-100 dark:bg-zinc-700 outline-none border-none">
+            <h2 id="auth-title" class="text-3xl font-black mb-8 text-center tracking-tighter">Вход</h2>
+            <div id="reg-box"><input type="text" id="reg-nick" placeholder="Твой ник" class="w-full p-4 mb-3 rounded-2xl bg-zinc-100 dark:bg-zinc-700 outline-none"></div>
+            <input type="email" id="email" placeholder="Email" class="w-full p-4 mb-3 rounded-2xl bg-zinc-100 dark:bg-zinc-700 outline-none">
+            <input type="password" id="pass" placeholder="Пароль" class="w-full p-4 mb-8 rounded-2xl bg-zinc-100 dark:bg-zinc-700 outline-none">
             <button id="submit-auth" class="w-full bg-blue-500 text-white py-4 rounded-2xl font-bold text-lg shadow-2xl">Поехали</button>
             <p id="auth-toggle" class="mt-6 text-center text-sm font-bold text-blue-500 cursor-pointer italic">Уже есть аккаунт? Войти</p>
         </div>
     </div>
 
     <script>
-        // --- CONFIG (ЗАМЕНИ НА СВОИ!) ---
+        // --- FIREBASE CONFIG (Вставь свои!) ---
         const firebaseConfig = {
         apiKey: "AIzaSyALdLdIiC5Jwfkeo6gfa3OaHHm3gkQ3jtM",
         authDomain: "qiwi-8aa6a.firebaseapp.com",
@@ -116,139 +116,86 @@
         const db = firebase.database();
         const auth = firebase.auth();
 
-        let currentUser = null;
-        let userProfile = null;
-        let selectedImg = null;
-        let isLoginMode = false;
-        const verifyBadge = `<svg class="w-4 h-4 text-blue-500 inline ml-1" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293l-4 4a1 1 0 01-1.414 0l-2-2a1 1 0 111.414-1.414L9 10.586l3.293-3.293a1 1 0 111.414 1.414z"></path></svg>`;
+        let currentUser = null, userProfile = null, allUsers = {}, selectedImg = null, isLogin = false;
+        const vBadge = `<svg class="w-4 h-4 text-blue-500 inline ml-1" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293l-4 4a1 1 0 01-1.414 0l-2-2a1 1 0 111.414-1.414L9 10.586l3.293-3.293a1 1 0 111.414 1.414z"></path></svg>`;
 
-        // --- AUTH ---
+        // --- СИНХРОНИЗАЦИЯ ПОЛЬЗОВАТЕЛЕЙ (Важно для обновления ников/ав) ---
+        db.ref('users').on('value', s => {
+            allUsers = s.val() || {};
+            updateUI(); // Перерисовываем всё при изменении любого профиля
+        });
+
         auth.onAuthStateChanged(user => {
             currentUser = user;
             if(user) {
                 document.getElementById('post-area').classList.remove('hidden');
-                document.getElementById('my-avatar-nav').classList.remove('hidden');
-                db.ref('users/' + user.uid).on('value', snap => {
-                    userProfile = snap.val();
-                    const name = userProfile?.nickname || user.email.split('@')[0];
-                    const av = userProfile?.avatar || `https://ui-avatars.com/api/?name=${name}`;
-                    document.getElementById('user-display').innerText = name;
-                    document.getElementById('my-avatar-nav').src = av;
-                    document.getElementById('my-avatar-post').src = av;
-                    document.getElementById('settings-avatar-pre').src = av;
+                db.ref('users/' + user.uid).on('value', s => {
+                    userProfile = s.val();
+                    document.getElementById('nav-avatar').src = userProfile?.avatar || `https://ui-avatars.com/api/?name=${userProfile?.nickname}`;
+                    document.getElementById('nav-avatar').classList.remove('hidden');
                     document.getElementById('open-settings').classList.remove('hidden');
+                    document.getElementById('auth-btn').innerText = 'Выход';
                 });
-                document.getElementById('auth-btn').innerText = 'Выход';
             } else {
                 document.getElementById('post-area').classList.add('hidden');
-                document.getElementById('my-avatar-nav').classList.add('hidden');
+                document.getElementById('nav-avatar').classList.add('hidden');
                 document.getElementById('open-settings').classList.add('hidden');
                 document.getElementById('auth-btn').innerText = 'Войти';
             }
         });
 
-        document.getElementById('auth-toggle').onclick = () => {
-            isLoginMode = !isLoginMode;
-            document.getElementById('auth-title').innerText = isLoginMode ? "С возвращением" : "Присоединяйся";
-            document.getElementById('reg-only').style.display = isLoginMode ? "none" : "block";
-            document.getElementById('auth-toggle').innerText = isLoginMode ? "Нет аккаунта? Создать" : "Есть аккаунт? Войти";
+        // --- ФУНКЦИИ ВКЛАДОК ---
+        window.switchTab = (tab) => {
+            document.getElementById('view-feed').classList.toggle('hidden', tab !== 'feed');
+            document.getElementById('view-people').classList.toggle('hidden', tab !== 'people');
+            window.scrollTo(0, 0);
         };
 
-        document.getElementById('submit-auth').onclick = async () => {
-            const e = document.getElementById('email').value, p = document.getElementById('pass').value, n = document.getElementById('reg-nick').value;
-            try {
-                if(isLoginMode) await auth.signInWithEmailAndPassword(e, p);
-                else {
-                    const r = await auth.createUserWithEmailAndPassword(e, p);
-                    await db.ref('users/' + r.user.uid).set({ nickname: n, uid: r.user.uid, avatar: "" });
-                }
-                document.getElementById('auth-modal').classList.add('hidden');
-            } catch (err) { alert(err.message); }
-        };
-
-        document.getElementById('auth-btn').onclick = () => currentUser ? auth.signOut() : document.getElementById('auth-modal').classList.remove('hidden');
-
-        // --- SETTINGS (AVATAR & NICK) ---
-        document.getElementById('open-settings').onclick = () => document.getElementById('settings-modal').classList.remove('hidden');
-        
-        document.getElementById('avatar-input').onchange = (e) => {
-            const reader = new FileReader();
-            reader.onload = (ev) => document.getElementById('settings-avatar-pre').src = ev.target.result;
-            reader.readAsDataURL(e.target.files[0]);
-        };
-
-        document.getElementById('save-settings').onclick = async () => {
-            const newNick = document.getElementById('new-nickname').value.trim();
-            const newAv = document.getElementById('settings-avatar-pre').src;
-            if(currentUser) {
-                await db.ref('users/' + currentUser.uid).update({ nickname: newNick, avatar: newAv });
-                document.getElementById('settings-modal').classList.add('hidden');
-            }
-        };
-
-        // --- POSTING ---
-        document.getElementById('file-input').onchange = (e) => {
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                selectedImg = ev.target.result;
-                document.getElementById('img-preview').src = selectedImg;
-                document.getElementById('preview-box').classList.remove('hidden');
-            };
-            reader.readAsDataURL(e.target.files[0]);
-        };
-        window.clearImg = () => { selectedImg = null; document.getElementById('preview-box').classList.add('hidden'); };
-
-        document.getElementById('send-btn').onclick = () => {
-            const txt = document.getElementById('post-text').value.trim();
-            if(!txt && !selectedImg) return;
-            db.ref('posts').push({
-                uid: currentUser.uid,
-                author: userProfile.nickname,
-                avatar: userProfile.avatar || "",
-                content: txt,
-                image: selectedImg,
-                date: Date.now(),
-                isAdmin: userProfile.isAdmin || false
-            });
-            document.getElementById('post-text').value = "";
-            clearImg();
-        };
-
-        // --- RENDER ---
+        // --- РЕНДЕР ПОСТА (СИНХРОННЫЙ) ---
         function renderPost(id, p) {
+            const authorData = allUsers[p.uid] || { nickname: p.author, avatar: "" };
             const likes = p.likes ? Object.keys(p.likes).length : 0;
             const isLiked = p.likes && p.likes[currentUser?.uid];
-            const av = p.avatar || `https://ui-avatars.com/api/?name=${p.author}`;
+            const av = authorData.avatar || `https://ui-avatars.com/api/?name=${authorData.nickname}`;
             
             return `
-                <div class="p-6 transition-colors hover:bg-zinc-50/50 dark:hover:bg-zinc-700/10">
-                    <div class="flex gap-4">
-                        <img src="${av}" class="avatar-circle shadow-md">
+                <div class="p-5 hover:bg-zinc-50/50 dark:hover:bg-zinc-700/10 transition-colors">
+                    <div class="flex gap-3">
+                        <img src="${av}" class="avatar-main shadow-md">
                         <div class="w-full">
-                            <div class="flex justify-between items-center">
-                                <div class="flex items-center gap-1">
-                                    <span class="font-black text-sm">@${p.author}</span>
-                                    ${p.isAdmin ? verifyBadge : ''}
-                                </div>
-                                <span class="text-[10px] opacity-30 font-bold">${new Date(p.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                            <div class="flex justify-between">
+                                <span class="font-black text-sm">@${authorData.nickname} ${authorData.isAdmin ? vBadge : ''}</span>
+                                <span class="text-[10px] opacity-30 font-bold uppercase">${new Date(p.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                             </div>
-                            <p class="mt-2 text-[17px] leading-snug text-zinc-800 dark:text-zinc-200">${p.content}</p>
-                            ${p.image ? `<img src="${p.image}" class="post-img shadow-2xl border dark:border-zinc-700">` : ''}
+                            <p class="mt-2 text-[16px] leading-snug">${p.content}</p>
+                            ${p.image ? `<img src="${p.image}" class="post-img shadow-xl">` : ''}
                             
-                            <div class="flex gap-8 mt-5">
-                                <button onclick="doLike('${id}')" class="flex items-center gap-2 font-black text-xs ${isLiked ? 'text-red-500' : 'opacity-30'}">
-                                    ${isLiked ? '❤️' : '🤍'} ${likes}
-                                </button>
-                                <button onclick="toggleComm('${id}')" class="opacity-30 font-black text-xs flex items-center gap-2">💬 ${p.comments ? Object.keys(p.comments).length : 0}</button>
-                                ${userProfile?.isAdmin ? `<button onclick="delPost('${id}')" class="text-red-500 font-black text-[10px] uppercase ml-auto">Удалить</button>` : ''}
+                            ${p.repost ? `
+                                <div class="repost-card">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <img src="${allUsers[p.repost.uid]?.avatar || 'https://ui-avatars.com/api/?name=' + p.repost.author}" class="w-5 h-5 rounded-full">
+                                        <b class="text-xs">@${allUsers[p.repost.uid]?.nickname || p.repost.author}</b>
+                                    </div>
+                                    <p class="text-sm opacity-70 italic">${p.repost.content}</p>
+                                </div>
+                            ` : ''}
+
+                            <div class="flex gap-8 mt-5 items-center">
+                                <button onclick="doLike('${id}')" class="font-black text-xs flex items-center gap-1.5 ${isLiked ? 'text-red-500' : 'opacity-30'}">${isLiked ? '❤️':'🤍'} ${likes}</button>
+                                <button onclick="toggleComm('${id}')" class="opacity-30 font-black text-xs">💬 ${p.comments ? Object.keys(p.comments).length : 0}</button>
+                                <button onclick="doRepost('${id}')" class="opacity-30 text-xs">🔁</button>
+                                ${userProfile?.isAdmin ? `<button onclick="delPost('${id}')" class="text-red-500 font-black text-[10px] ml-auto">Удалить</button>` : ''}
                             </div>
                             <div id="cbox-${id}" class="hidden mt-4 pt-4 border-t dark:border-zinc-700">
                                 <div class="space-y-3 mb-4">
-                                    ${p.comments ? Object.values(p.comments).map(c => `<div class="flex gap-2 text-sm"><b class="text-blue-500 text-xs">@${c.author}:</b> <span>${c.text}</span></div>`).join('') : ''}
+                                    ${p.comments ? Object.values(p.comments).map(c => {
+                                        const cAuthor = allUsers[c.uid] || { nickname: c.author };
+                                        return `<div class="text-sm"><b class="text-blue-500 text-xs">@${cAuthor.nickname}:</b> ${c.text}</div>`
+                                    }).join('') : ''}
                                 </div>
                                 <div class="flex gap-2">
-                                    <input id="cin-${id}" class="w-full bg-zinc-100 dark:bg-zinc-700 rounded-xl px-4 py-2 text-xs outline-none" placeholder="Ваш ответ...">
-                                    <button onclick="addComm('${id}')" class="bg-blue-500 text-white px-4 rounded-xl text-xs font-bold">OK</button>
+                                    <input id="cin-${id}" class="w-full bg-zinc-100 dark:bg-zinc-700 rounded-xl px-4 py-2 text-xs outline-none" placeholder="Ответить...">
+                                    <button onclick="addComm('${id}')" class="text-blue-500 font-bold px-2">OK</button>
                                 </div>
                             </div>
                         </div>
@@ -256,30 +203,74 @@
                 </div>`;
         }
 
-        db.ref('posts').on('value', s => {
-            const f = document.getElementById('feed'); f.innerHTML = "";
-            if(s.val()) Object.entries(s.val()).reverse().forEach(([id, p]) => f.innerHTML += renderPost(id, p));
-        });
-
-        // --- ACTIONS ---
-        window.doLike = id => { if(!currentUser) return; const r = db.ref(`posts/${id}/likes/${currentUser.uid}`); r.once('value').then(s => s.exists() ? r.remove() : r.set(true)); };
-        window.toggleComm = id => document.getElementById(`cbox-${id}`).classList.toggle('hidden');
-        window.addComm = id => {
-            const i = document.getElementById(`cin-${id}`); if(!i.value.trim() || !currentUser) return;
-            db.ref(`posts/${id}/comments`).push({ author: userProfile.nickname, text: i.value.trim() }); i.value = "";
-        };
-        window.delPost = id => confirm("Удалить пост?") && db.ref(`posts/${id}`).remove();
-
-        db.ref('users').limitToLast(6).on('value', s => {
-            const l = document.getElementById('rec-list'); l.innerHTML = "";
-            if(s.val()) Object.values(s.val()).forEach(u => {
-                if(u.uid === currentUser?.uid) return;
-                const av = u.avatar || `https://ui-avatars.com/api/?name=${u.nickname}`;
-                l.innerHTML += `<div class="flex items-center gap-3"><img src="${av}" class="w-8 h-8 rounded-full border dark:border-zinc-700"><span class="text-sm font-bold">@${u.nickname}</span></div>`;
+        function updateUI() {
+            db.ref('posts').once('value', s => {
+                const f = document.getElementById('feed'); f.innerHTML = "";
+                if(s.val()) Object.entries(s.val()).reverse().forEach(([id, p]) => f.innerHTML += renderPost(id, p));
             });
-        });
+            
+            // Список людей
+            const buildList = () => {
+                let html = "";
+                Object.values(allUsers).forEach(u => {
+                    if(u.uid === currentUser?.uid) return;
+                    const av = u.avatar || `https://ui-avatars.com/api/?name=${u.nickname}`;
+                    html += `<div class="flex items-center gap-3"><img src="${av}" class="w-10 h-10 rounded-full border dark:border-zinc-700"><b class="text-sm">@${u.nickname} ${u.isAdmin ? vBadge : ''}</b></div>`;
+                });
+                document.getElementById('rec-list-desktop').innerHTML = html;
+                document.getElementById('rec-list-mobile').innerHTML = html;
+            }
+            buildList();
+        }
 
+        // --- ДЕЙСТВИЯ ---
+        window.doRepost = (id) => {
+            const myText = prompt("Ваш комментарий к репосту:", "Интересно!");
+            if(myText === null) return;
+            db.ref(`posts/${id}`).once('value', s => {
+                db.ref('posts').push({
+                    uid: currentUser.uid, author: userProfile.nickname,
+                    content: myText, repost: s.val(), date: Date.now()
+                });
+            });
+        };
+
+        window.addComm = (id) => {
+            const i = document.getElementById(`cin-${id}`); if(!i.value.trim()) return;
+            db.ref(`posts/${id}/comments`).push({ uid: currentUser.uid, author: userProfile.nickname, text: i.value.trim() });
+            i.value = "";
+        };
+
+        // Остальные стандартные функции
+        window.doLike = id => { const r = db.ref(`posts/${id}/likes/${currentUser.uid}`); r.once('value').then(s => s.exists() ? r.remove() : r.set(true)); };
+        window.toggleComm = id => document.getElementById(`cbox-${id}`).classList.toggle('hidden');
+        window.delPost = id => confirm("Удалить?") && db.ref(`posts/${id}`).remove();
+
+        document.getElementById('send-btn').onclick = () => {
+            const t = document.getElementById('post-text').value.trim();
+            if(!t && !selectedImg) return;
+            db.ref('posts').push({ uid: currentUser.uid, author: userProfile.nickname, content: t, image: selectedImg, date: Date.now(), isAdmin: userProfile.isAdmin || false });
+            document.getElementById('post-text').value = ""; clearImg();
+        };
+
+        // --- AUTH & SETTINGS ---
+        document.getElementById('auth-btn').onclick = () => currentUser ? auth.signOut() : document.getElementById('auth-modal').classList.remove('hidden');
+        document.getElementById('auth-toggle').onclick = () => { isLogin = !isLogin; document.getElementById('auth-title').innerText = isLogin ? "Вход":"Регистрация"; document.getElementById('reg-box').style.display = isLogin ? "none":"block"; };
+        document.getElementById('submit-auth').onclick = async () => {
+            const e = document.getElementById('email').value, p = document.getElementById('pass').value, n = document.getElementById('reg-nick').value;
+            try { if(isLogin) await auth.signInWithEmailAndPassword(e,p); else { const r = await auth.createUserWithEmailAndPassword(e,p); await db.ref('users/'+r.user.uid).set({ nickname: n, uid: r.user.uid, avatar: "" }); } document.getElementById('auth-modal').classList.add('hidden'); } catch(e) { alert(e.message); }
+        };
+        document.getElementById('open-settings').onclick = () => { document.getElementById('new-nick').value = userProfile.nickname; document.getElementById('set-av-pre').src = userProfile.avatar; document.getElementById('settings-modal').classList.remove('hidden'); };
+        document.getElementById('save-set').onclick = async () => { await db.ref('users/'+currentUser.uid).update({ nickname: document.getElementById('new-nick').value, avatar: document.getElementById('set-av-pre').src }); document.getElementById('settings-modal').classList.add('hidden'); };
+        
+        // Файлы
+        document.getElementById('file-input').onchange = (e) => { const r = new FileReader(); r.onload = (ev) => { selectedImg = ev.target.result; document.getElementById('img-preview').src = selectedImg; document.getElementById('preview-box').classList.remove('hidden'); }; r.readAsDataURL(e.target.files[0]); };
+        document.getElementById('av-input').onchange = (e) => { const r = new FileReader(); r.onload = (ev) => { document.getElementById('set-av-pre').src = ev.target.result; }; r.readAsDataURL(e.target.files[0]); };
+        window.clearImg = () => { selectedImg = null; document.getElementById('preview-box').classList.add('hidden'); };
         document.getElementById('theme-toggle').onclick = () => document.documentElement.classList.toggle('dark');
+        
+        // Первый запуск
+        db.ref('posts').on('value', updateUI);
     </script>
 </body>
 </html>
