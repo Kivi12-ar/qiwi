@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MicroBlog Final</title>
+    <title>MicroSocial Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>tailwind.config = { darkMode: 'class' }</script>
     
@@ -13,95 +13,121 @@
 
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .post-img { max-height: 400px; width: 100%; object-fit: cover; border-radius: 1.5rem; margin-top: 12px; }
-        .avatar-main { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: #3b82f6; flex-shrink: 0; }
-        .repost-card { border: 1px solid rgba(59, 130, 246, 0.3); padding: 10px; margin-top: 10px; border-radius: 1rem; background: rgba(59, 130, 246, 0.03); }
-        body { padding-bottom: 70px; } /* Отступ под нижнее меню */
+        body { padding-bottom: 85px; -webkit-tap-highlight-color: transparent; }
+        .active-nav { color: #3b82f6 !important; opacity: 1 !important; transform: scale(1.1); }
+        .view-section { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .notif-dot { position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid white; display: none; }
+        .dark .notif-dot { border-color: #09090b; }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-all">
+<body class="bg-slate-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans">
 
-    <div class="max-w-6xl mx-auto flex justify-center gap-6">
-        <main class="w-full max-w-2xl bg-white dark:bg-zinc-800 min-h-screen shadow-2xl sm:border-x dark:border-zinc-700">
-            
-            <header class="p-4 border-b dark:border-zinc-700 sticky top-0 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md z-40 flex justify-between items-center">
-                <h1 class="text-2xl font-black text-blue-500 italic">M.</h1>
-                <div class="flex items-center gap-3">
-                    <button id="open-settings" class="hidden text-xs font-black uppercase text-blue-500">Профиль ⚙️</button>
-                    <img id="nav-avatar" src="" class="w-10 h-10 rounded-full border dark:border-zinc-700 hidden">
-                    <button id="auth-btn" class="bg-blue-500 text-white px-4 py-2 rounded-full text-xs font-black uppercase shadow-lg">Войти</button>
+    <header class="sticky top-0 z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b dark:border-zinc-800 p-4 flex justify-between items-center">
+        <h1 class="text-xl font-black text-blue-500 italic tracking-tighter" onclick="showView('feed')">SOCIAL.</h1>
+        <button id="auth-btn" class="bg-blue-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg shadow-blue-500/20">Войти</button>
+    </header>
+
+    <main class="max-w-2xl mx-auto">
+        
+        <section id="view-feed" class="view-section">
+            <div id="post-input" class="p-4 border-b dark:border-zinc-900 hidden bg-white dark:bg-zinc-900/30">
+                <textarea id="post-text" class="w-full bg-transparent text-lg outline-none resize-none" placeholder="Что нового?" rows="2"></textarea>
+                <div class="flex justify-between items-center mt-2">
+                    <label class="p-2 text-blue-500 cursor-pointer">🖼️ <input type="file" id="file-input" class="hidden"></label>
+                    <button id="send-btn" class="bg-blue-500 text-white px-6 py-2 rounded-full font-bold text-sm">Постить</button>
                 </div>
-            </header>
-
-            <section id="view-feed">
-                <div id="post-area" class="p-4 border-b dark:border-zinc-700 hidden">
-                    <textarea id="post-text" class="w-full bg-transparent text-lg outline-none resize-none" placeholder="Что нового?" rows="3"></textarea>
-                    <div id="preview-box" class="hidden relative my-3">
-                        <img id="img-preview" src="" class="rounded-2xl max-h-60 w-full object-cover">
-                        <button onclick="clearImg()" class="absolute top-2 right-2 bg-black/60 text-white w-8 h-8 rounded-full">✕</button>
-                    </div>
-                    <div class="flex justify-between items-center pt-3 border-t dark:border-zinc-700">
-                        <label class="cursor-pointer text-blue-500 p-2">🖼️ <input type="file" id="file-input" class="hidden" accept="image/*"></label>
-                        <button id="send-btn" class="bg-blue-500 text-white px-6 py-2 rounded-full font-bold shadow-lg">Постить</button>
-                    </div>
-                </div>
-                <div id="feed" class="divide-y dark:divide-zinc-700"></div>
-            </section>
-
-            <section id="view-people" class="hidden p-4">
-                <h2 class="text-xl font-black mb-4">Интересные люди</h2>
-                <div id="rec-list-mobile" class="space-y-4"></div>
-            </section>
-        </main>
-
-        <aside class="w-80 hidden lg:block py-6">
-            <div class="bg-white dark:bg-zinc-800 p-6 rounded-[2rem] shadow-sm border dark:border-zinc-700 sticky top-24">
-                <h3 class="font-black text-xs uppercase opacity-40 mb-5">Рекомендации</h3>
-                <div id="rec-list-desktop" class="space-y-5"></div>
             </div>
-        </aside>
-    </div>
+            <div id="feed-container" class="divide-y dark:divide-zinc-900"></div>
+        </section>
 
-    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md border-t dark:border-zinc-700 flex justify-around p-3 z-50">
-        <button onclick="switchTab('feed')" class="flex flex-col items-center gap-1">
-            <span class="text-xl">🏠</span>
-            <span class="text-[10px] font-bold uppercase">Лента</span>
-        </button>
-        <button onclick="switchTab('people')" class="flex flex-col items-center gap-1">
-            <span class="text-xl">👥</span>
-            <span class="text-[10px] font-bold uppercase">Люди</span>
-        </button>
-        <button id="theme-toggle" class="flex flex-col items-center gap-1">
-            <span class="text-xl">🌓</span>
-            <span class="text-[10px] font-bold uppercase">Тема</span>
-        </button>
+        <section id="view-discovery" class="view-section hidden">
+            <div class="p-4"><input type="text" id="search-input" placeholder="Поиск людей (ник или @юзер)..." class="w-full bg-zinc-100 dark:bg-zinc-900 p-4 rounded-2xl outline-none font-bold"></div>
+            <div id="discovery-list" class="p-4 space-y-4"></div>
+        </section>
+
+        <section id="view-chats" class="view-section hidden">
+            <h2 class="text-2xl font-black p-6">Чаты</h2>
+            <div id="chats-list" class="divide-y dark:divide-zinc-900"></div>
+        </section>
+
+        <section id="view-chat-room" class="view-section hidden fixed inset-0 z-[60] bg-white dark:bg-zinc-950 flex flex-col">
+            <div class="p-4 border-b dark:border-zinc-800 flex items-center gap-4">
+                <button onclick="showView('chats')" class="text-2xl p-2">←</button>
+                <img id="chat-target-av" src="" class="w-10 h-10 rounded-full object-cover">
+                <b id="chat-target-nick">Чат</b>
+            </div>
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col no-scrollbar"></div>
+            <div class="p-4 border-t dark:border-zinc-800 flex gap-2 mb-safe">
+                <input type="text" id="chat-input" placeholder="Сообщение..." class="w-full bg-zinc-100 dark:bg-zinc-900 p-3 rounded-2xl outline-none">
+                <button id="chat-send" class="bg-blue-500 text-white px-6 rounded-2xl font-bold text-xl">↑</button>
+            </div>
+        </section>
+
+        <section id="view-notifs" class="view-section hidden">
+            <h2 class="text-2xl font-black p-6">События</h2>
+            <div id="notifs-list" class="divide-y dark:divide-zinc-900"></div>
+        </section>
+
+        <section id="view-profile" class="view-section hidden">
+            <div class="p-6 border-b dark:border-zinc-800 bg-white dark:bg-zinc-900/50">
+                <div class="flex justify-between items-start mb-4">
+                    <img id="prof-av" src="" class="w-24 h-24 rounded-full object-cover border-4 border-blue-500 shadow-2xl">
+                    <div class="flex gap-2">
+                        <button id="msg-btn" class="hidden border dark:border-zinc-700 bg-white dark:bg-zinc-800 p-3 rounded-full shadow-sm">✉️</button>
+                        <button id="follow-btn" class="hidden bg-blue-500 text-white px-6 py-2 rounded-full font-bold text-sm shadow-lg shadow-blue-500/30">Подписаться</button>
+                        <button id="edit-prof-btn" class="hidden border dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 px-4 py-2 rounded-full text-sm font-bold">⚙️</button>
+                    </div>
+                </div>
+                <h2 id="prof-nick" class="text-3xl font-black tracking-tight">Имя</h2>
+                <p id="prof-user" class="text-blue-500 font-bold mb-4">@username</p>
+                <div class="flex gap-8 border-t dark:border-zinc-800 pt-4">
+                    <div class="text-center"><b id="count-subs" class="text-xl">0</b><p class="text-[10px] uppercase opacity-40 font-black">Подписки</p></div>
+                    <div class="text-center"><b id="count-followers" class="text-xl">0</b><p class="text-[10px] uppercase opacity-40 font-black">Подписчики</p></div>
+                </div>
+            </div>
+            <div id="prof-posts" class="divide-y dark:divide-zinc-900"></div>
+        </section>
+    </main>
+
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border-t dark:border-zinc-800 flex justify-around p-4 z-50">
+        <button onclick="showView('feed')" id="nav-feed" class="flex flex-col items-center opacity-40">🏠</button>
+        <button onclick="showView('discovery')" id="nav-discovery" class="flex flex-col items-center opacity-40">🔍</button>
+        <button onclick="showView('chats')" id="nav-chats" class="relative flex flex-col items-center opacity-40">💬<div id="dot-chats" class="notif-dot"></div></button>
+        <button onclick="showView('notifs')" id="nav-notifs" class="relative flex flex-col items-center opacity-40">🔔<div id="dot-notifs" class="notif-dot"></div></button>
+        <button onclick="openMyProfile()" id="nav-profile" class="flex flex-col items-center opacity-40">👤</button>
     </nav>
 
-    <div id="settings-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-zinc-800 p-8 rounded-[2.5rem] w-full max-w-sm text-center">
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black/90 z-[110] flex items-center justify-center p-4 backdrop-blur-md">
+        <div class="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] w-full max-w-sm">
+            <h2 class="text-2xl font-black mb-6 text-center">Настройки</h2>
             <div class="relative w-24 h-24 mx-auto mb-6">
                 <img id="set-av-pre" src="" class="w-24 h-24 rounded-full object-cover border-4 border-blue-500">
-                <label class="absolute bottom-0 right-0 bg-blue-500 text-white p-2 rounded-full cursor-pointer">📷 <input type="file" id="av-input" class="hidden"></label>
+                <label class="absolute bottom-0 right-0 bg-blue-500 text-white p-2 rounded-full cursor-pointer shadow-lg">📷 <input type="file" id="av-input" class="hidden"></label>
             </div>
-            <input type="text" id="new-nick" placeholder="Никнейм" class="w-full p-4 rounded-2xl mb-4 bg-zinc-100 dark:bg-zinc-700 outline-none font-bold">
-            <button id="save-set" class="w-full bg-blue-500 text-white py-4 rounded-2xl font-bold shadow-xl">Сохранить</button>
-            <button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="mt-4 text-xs opacity-40 font-bold uppercase tracking-widest">Закрыть</button>
+            <p class="text-[10px] font-black opacity-40 mb-1 ml-2 uppercase">Имя профиля</p>
+            <input type="text" id="new-nick" class="w-full p-4 rounded-2xl mb-6 bg-zinc-100 dark:bg-zinc-800 outline-none font-bold">
+            <button id="save-settings-btn" class="w-full bg-blue-500 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-all">Сохранить</button>
+            <button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="w-full mt-4 text-xs font-black opacity-30 text-center uppercase tracking-widest">Отмена</button>
         </div>
     </div>
 
-    <div id="auth-modal" class="hidden fixed inset-0 bg-black/80 z-[110] flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-zinc-800 p-10 rounded-[3rem] w-full max-w-sm">
-            <h2 id="auth-title" class="text-3xl font-black mb-8 text-center tracking-tighter">Вход</h2>
-            <div id="reg-box"><input type="text" id="reg-nick" placeholder="Твой ник" class="w-full p-4 mb-3 rounded-2xl bg-zinc-100 dark:bg-zinc-700 outline-none"></div>
-            <input type="email" id="email" placeholder="Email" class="w-full p-4 mb-3 rounded-2xl bg-zinc-100 dark:bg-zinc-700 outline-none">
-            <input type="password" id="pass" placeholder="Пароль" class="w-full p-4 mb-8 rounded-2xl bg-zinc-100 dark:bg-zinc-700 outline-none">
-            <button id="submit-auth" class="w-full bg-blue-500 text-white py-4 rounded-2xl font-bold text-lg shadow-2xl">Поехали</button>
-            <p id="auth-toggle" class="mt-6 text-center text-sm font-bold text-blue-500 cursor-pointer italic">Уже есть аккаунт? Войти</p>
+    <div id="auth-modal" class="hidden fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-zinc-900 p-10 rounded-[3rem] w-full max-w-sm">
+            <h2 id="auth-title" class="text-3xl font-black mb-8 text-center">Вход</h2>
+            <div id="reg-fields">
+                <input type="text" id="reg-user" placeholder="@username" class="w-full p-4 mb-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800 outline-none font-bold border dark:border-zinc-700">
+                <input type="text" id="reg-nick" placeholder="Имя профиля" class="w-full p-4 mb-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800 outline-none border dark:border-zinc-700">
+            </div>
+            <input type="email" id="email" placeholder="Email" class="w-full p-4 mb-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800 outline-none border dark:border-zinc-700">
+            <input type="password" id="pass" placeholder="Пароль" class="w-full p-4 mb-8 rounded-2xl bg-zinc-100 dark:bg-zinc-800 outline-none border dark:border-zinc-700">
+            <button id="submit-auth" class="w-full bg-blue-500 text-white py-4 rounded-2xl font-bold shadow-2xl">Продолжить</button>
+            <p id="auth-toggle" class="mt-6 text-center text-sm font-bold text-blue-500 cursor-pointer">Нет аккаунта? Создать</p>
         </div>
     </div>
 
     <script>
-        // --- FIREBASE CONFIG (Вставь свои!) ---
+        // --- CONFIG FIREBASE ---
         const firebaseConfig = {
         apiKey: "AIzaSyALdLdIiC5Jwfkeo6gfa3OaHHm3gkQ3jtM",
         authDomain: "qiwi-8aa6a.firebaseapp.com",
@@ -116,161 +142,270 @@
         const db = firebase.database();
         const auth = firebase.auth();
 
-        let currentUser = null, userProfile = null, allUsers = {}, selectedImg = null, isLogin = false;
-        const vBadge = `<svg class="w-4 h-4 text-blue-500 inline ml-1" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293l-4 4a1 1 0 01-1.414 0l-2-2a1 1 0 111.414-1.414L9 10.586l3.293-3.293a1 1 0 111.414 1.414z"></path></svg>`;
+        let currentUser = null, userProfile = null, allUsers = {}, isLogin = false, activeChatId = null, selectedImg = null;
 
-        // --- СИНХРОНИЗАЦИЯ ПОЛЬЗОВАТЕЛЕЙ (Важно для обновления ников/ав) ---
-        db.ref('users').on('value', s => {
-            allUsers = s.val() || {};
-            updateUI(); // Перерисовываем всё при изменении любого профиля
-        });
-
-        auth.onAuthStateChanged(user => {
-            currentUser = user;
-            if(user) {
-                document.getElementById('post-area').classList.remove('hidden');
-                db.ref('users/' + user.uid).on('value', s => {
-                    userProfile = s.val();
-                    document.getElementById('nav-avatar').src = userProfile?.avatar || `https://ui-avatars.com/api/?name=${userProfile?.nickname}`;
-                    document.getElementById('nav-avatar').classList.remove('hidden');
-                    document.getElementById('open-settings').classList.remove('hidden');
-                    document.getElementById('auth-btn').innerText = 'Выход';
-                });
-            } else {
-                document.getElementById('post-area').classList.add('hidden');
-                document.getElementById('nav-avatar').classList.add('hidden');
-                document.getElementById('open-settings').classList.add('hidden');
-                document.getElementById('auth-btn').innerText = 'Войти';
-            }
-        });
-
-        // --- ФУНКЦИИ ВКЛАДОК ---
-        window.switchTab = (tab) => {
-            document.getElementById('view-feed').classList.toggle('hidden', tab !== 'feed');
-            document.getElementById('view-people').classList.toggle('hidden', tab !== 'people');
-            window.scrollTo(0, 0);
+        // --- NAVIGATION LOGIC ---
+        window.showView = (view) => {
+            document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
+            document.getElementById('view-' + view).classList.remove('hidden');
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
+            const nBtn = document.getElementById('nav-' + (view === 'chat-room' ? 'chats' : view));
+            if(nBtn) nBtn.classList.add('active-nav');
+            if(view === 'feed') renderFeed();
+            if(view === 'discovery') renderUsers();
+            if(view === 'chats') renderChatsList();
+            if(view === 'notifs') markNotifsRead();
+            window.scrollTo(0,0);
         };
 
-        // --- РЕНДЕР ПОСТА (СИНХРОННЫЙ) ---
-        function renderPost(id, p) {
-            const authorData = allUsers[p.uid] || { nickname: p.author, avatar: "" };
+        // --- SEARCH ---
+        document.getElementById('search-input').oninput = (e) => renderUsers(e.target.value.toLowerCase().replace('@',''));
+
+        function renderUsers(query = "") {
+            const list = document.getElementById('discovery-list'); list.innerHTML = "";
+            Object.values(allUsers).forEach(u => {
+                if(u.uid === currentUser?.uid) return;
+                if(u.username.includes(query) || u.nickname.toLowerCase().includes(query)) {
+                    list.innerHTML += `
+                    <div onclick="openProfile('${u.uid}')" class="flex items-center justify-between bg-white dark:bg-zinc-900 p-4 rounded-3xl shadow-sm border dark:border-zinc-800">
+                        <div class="flex items-center gap-3">
+                            <img src="${u.avatar || 'https://ui-avatars.com/api/?name='+u.nickname}" class="w-12 h-12 rounded-full object-cover shadow-md">
+                            <div><h4 class="font-black text-sm">@${u.username}</h4><p class="text-[10px] opacity-40 font-black uppercase">${u.nickname}</p></div>
+                        </div>
+                        <span class="text-blue-500 text-xs font-black uppercase">Профиль</span>
+                    </div>`;
+                }
+            });
+        }
+
+        // --- DMs (Messenger) ---
+        window.openChat = (targetUid) => {
+            const chatId = [currentUser.uid, targetUid].sort().join('_');
+            activeChatId = chatId;
+            showView('chat-room');
+            const target = allUsers[targetUid];
+            document.getElementById('chat-target-nick').innerText = target.nickname;
+            document.getElementById('chat-target-av').src = target.avatar || 'https://ui-avatars.com/api/?name='+target.nickname;
+            
+            db.ref(`messages/${chatId}`).off();
+            db.ref(`messages/${chatId}`).on('value', s => {
+                const box = document.getElementById('chat-messages'); box.innerHTML = "";
+                if(s.val()) Object.values(s.val()).forEach(m => {
+                    const isMe = m.sender === currentUser.uid;
+                    box.innerHTML += `<div class="max-w-[80%] p-3 rounded-2xl text-sm shadow-sm ${isMe ? 'bg-blue-500 text-white self-end rounded-br-none' : 'bg-zinc-100 dark:bg-zinc-800 self-start rounded-bl-none'}">${m.text}</div>`;
+                });
+                box.scrollTo(0, box.scrollHeight);
+            });
+        };
+
+        document.getElementById('chat-send').onclick = () => {
+            const t = document.getElementById('chat-input').value.trim();
+            if(!t || !activeChatId) return;
+            db.ref(`messages/${activeChatId}`).push({ sender: currentUser.uid, text: t, date: Date.now() });
+            const targetUid = activeChatId.replace(currentUser.uid, '').replace('_', '');
+            sendNotif(targetUid, "отправил сообщение");
+            document.getElementById('chat-input').value = "";
+        };
+
+        function renderChatsList() {
+            const list = document.getElementById('chats-list'); list.innerHTML = "";
+            db.ref(`following/${currentUser.uid}`).once('value', s => {
+                if(!s.val()) list.innerHTML = "<p class='p-20 text-center opacity-30 font-bold uppercase text-[10px] tracking-widest'>Чатов пока нет</p>";
+                Object.keys(s.val() || {}).forEach(uid => {
+                    const u = allUsers[uid];
+                    list.innerHTML += `<div onclick="openChat('${uid}')" class="p-4 flex items-center gap-4 active:bg-blue-50 dark:active:bg-zinc-900 transition-colors border-b dark:border-zinc-900"><img src="${u.avatar || 'https://ui-avatars.com/api/?name='+u.nickname}" class="w-14 h-14 rounded-full shadow-lg"><div class="flex-1"><b class="text-base">@${u.username}</b><p class="text-xs opacity-50">${u.nickname}</p></div></div>`;
+                });
+            });
+        }
+
+        // --- NOTIFICATIONS ---
+        function sendNotif(targetUid, type) {
+            if(targetUid === currentUser.uid) return;
+            db.ref(`notifications/${targetUid}`).push({ from: currentUser.uid, type: type, date: Date.now(), read: false });
+        }
+
+        function markNotifsRead() {
+            db.ref(`notifications/${currentUser.uid}`).once('value', s => {
+                if(s.val()) Object.keys(s.val()).forEach(k => db.ref(`notifications/${currentUser.uid}/${k}`).update({read: true}));
+                document.getElementById('dot-notifs').style.display = 'none';
+            });
+            renderNotifsList();
+        }
+
+        function renderNotifsList() {
+            db.ref(`notifications/${currentUser.uid}`).limitToLast(30).on('value', s => {
+                const list = document.getElementById('notifs-list'); list.innerHTML = "";
+                if(!s.val()) list.innerHTML = "<p class='p-20 text-center opacity-20 font-black text-xs uppercase'>Событий нет</p>";
+                if(s.val()) Object.values(s.val()).reverse().forEach(n => {
+                    const u = allUsers[n.from] || {nickname: 'Юзер', username: 'id'};
+                    list.innerHTML += `<div class="p-5 flex items-center gap-4"><img src="${u.avatar || 'https://ui-avatars.com/api/?name='+u.nickname}" class="w-10 h-10 rounded-full shadow-sm"><div><p class="text-sm"><b>@${u.username}</b> ${n.type}</p><span class="text-[9px] opacity-30 font-black uppercase">${new Date(n.date).toLocaleDateString()}</span></div></div>`;
+                });
+            });
+        }
+
+        // --- PROFILE & SETTINGS ---
+        async function openProfile(uid) {
+            showView('profile');
+            const user = allUsers[uid];
+            if(!user) return;
+            document.getElementById('prof-nick').innerText = user.nickname;
+            document.getElementById('prof-user').innerText = "@" + user.username;
+            document.getElementById('prof-av').src = user.avatar || 'https://ui-avatars.com/api/?name=' + user.nickname;
+            
+            const fBtn = document.getElementById('follow-btn');
+            const eBtn = document.getElementById('edit-prof-btn');
+            const mBtn = document.getElementById('msg-btn');
+
+            if(currentUser?.uid === uid) {
+                fBtn.classList.add('hidden'); mBtn.classList.add('hidden'); eBtn.classList.remove('hidden');
+            } else {
+                eBtn.classList.add('hidden'); fBtn.classList.remove('hidden'); mBtn.classList.remove('hidden');
+                const s = await db.ref(`following/${currentUser?.uid}/${uid}`).once('value');
+                fBtn.innerText = s.exists() ? "Отписаться" : "Подписаться";
+                fBtn.className = s.exists() ? "border dark:border-zinc-700 px-6 py-2 rounded-full font-bold text-sm" : "bg-blue-500 text-white px-6 py-2 rounded-full font-bold text-sm shadow-lg";
+                fBtn.onclick = () => toggleFollow(uid);
+                mBtn.onclick = () => openChat(uid);
+            }
+
+            db.ref(`following/${uid}`).on('value', s => document.getElementById('count-subs').innerText = s.numChildren());
+            db.ref(`followers/${uid}`).on('value', s => document.getElementById('count-followers').innerText = s.numChildren());
+            db.ref('posts').orderByChild('uid').equalTo(uid).once('value', s => {
+                const c = document.getElementById('prof-posts'); c.innerHTML = "";
+                if(s.val()) Object.entries(s.val()).reverse().forEach(([id, p]) => c.innerHTML += drawPost(id, p));
+            });
+        }
+
+        window.openMyProfile = () => currentUser ? openProfile(currentUser.uid) : document.getElementById('auth-modal').classList.remove('hidden');
+
+        document.getElementById('edit-prof-btn').onclick = () => {
+            document.getElementById('new-nick').value = userProfile.nickname;
+            document.getElementById('set-av-pre').src = userProfile.avatar || 'https://ui-avatars.com/api/?name='+userProfile.nickname;
+            document.getElementById('settings-modal').classList.remove('hidden');
+        };
+
+        document.getElementById('save-settings-btn').onclick = async () => {
+            const n = document.getElementById('new-nick').value.trim();
+            const a = document.getElementById('set-av-pre').src;
+            if(n && currentUser) {
+                await db.ref('users/' + currentUser.uid).update({ nickname: n, avatar: a });
+                document.getElementById('settings-modal').classList.add('hidden');
+            }
+        };
+
+        // --- CORE FEATURES (FEED, LIKES, FOLLOWS) ---
+        async function renderFeed() {
+            const c = document.getElementById('feed-container'); c.innerHTML = "";
+            const ps = await db.ref('posts').limitToLast(40).once('value');
+            const posts = ps.val() ? Object.entries(ps.val()).reverse() : [];
+            const fs = await db.ref(`following/${currentUser?.uid}`).once('value');
+            const mySubs = fs.val() ? Object.keys(fs.val()) : [];
+
+            posts.forEach(([id, p]) => {
+                if(p.uid === currentUser?.uid || mySubs.includes(p.uid)) c.innerHTML += drawPost(id, p);
+            });
+            if(!c.innerHTML) c.innerHTML = "<div class='p-20 text-center opacity-30 font-black text-xs uppercase tracking-widest leading-loose'>Тут будут посты людей, на которых ты подпишешься. Попробуй раздел Поиск!</div>";
+        }
+
+        function drawPost(id, p) {
+            const u = allUsers[p.uid] || {nickname: 'User', username: 'id'};
             const likes = p.likes ? Object.keys(p.likes).length : 0;
             const isLiked = p.likes && p.likes[currentUser?.uid];
-            const av = authorData.avatar || `https://ui-avatars.com/api/?name=${authorData.nickname}`;
-            
             return `
-                <div class="p-5 hover:bg-zinc-50/50 dark:hover:bg-zinc-700/10 transition-colors">
-                    <div class="flex gap-3">
-                        <img src="${av}" class="avatar-main shadow-md">
+                <div class="p-5 bg-white dark:bg-zinc-950 border-b dark:border-zinc-900 transition-all">
+                    <div class="flex gap-4">
+                        <img onclick="openProfile('${p.uid}')" src="${u.avatar || 'https://ui-avatars.com/api/?name='+u.nickname}" class="w-12 h-12 rounded-full object-cover shadow-lg border dark:border-zinc-800">
                         <div class="w-full">
-                            <div class="flex justify-between">
-                                <span class="font-black text-sm">@${authorData.nickname} ${authorData.isAdmin ? vBadge : ''}</span>
-                                <span class="text-[10px] opacity-30 font-bold uppercase">${new Date(p.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                            <div class="flex justify-between items-center mb-1">
+                                <b onclick="openProfile('${p.uid}')" class="text-sm font-bold tracking-tight cursor-pointer">@${u.username}</b>
+                                <span class="text-[9px] opacity-20 font-black uppercase tracking-tighter">${new Date(p.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                             </div>
-                            <p class="mt-2 text-[16px] leading-snug">${p.content}</p>
-                            ${p.image ? `<img src="${p.image}" class="post-img shadow-xl">` : ''}
-                            
-                            ${p.repost ? `
-                                <div class="repost-card">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <img src="${allUsers[p.repost.uid]?.avatar || 'https://ui-avatars.com/api/?name=' + p.repost.author}" class="w-5 h-5 rounded-full">
-                                        <b class="text-xs">@${allUsers[p.repost.uid]?.nickname || p.repost.author}</b>
-                                    </div>
-                                    <p class="text-sm opacity-70 italic">${p.repost.content}</p>
-                                </div>
-                            ` : ''}
-
-                            <div class="flex gap-8 mt-5 items-center">
-                                <button onclick="doLike('${id}')" class="font-black text-xs flex items-center gap-1.5 ${isLiked ? 'text-red-500' : 'opacity-30'}">${isLiked ? '❤️':'🤍'} ${likes}</button>
-                                <button onclick="toggleComm('${id}')" class="opacity-30 font-black text-xs">💬 ${p.comments ? Object.keys(p.comments).length : 0}</button>
-                                <button onclick="doRepost('${id}')" class="opacity-30 text-xs">🔁</button>
-                                ${userProfile?.isAdmin ? `<button onclick="delPost('${id}')" class="text-red-500 font-black text-[10px] ml-auto">Удалить</button>` : ''}
-                            </div>
-                            <div id="cbox-${id}" class="hidden mt-4 pt-4 border-t dark:border-zinc-700">
-                                <div class="space-y-3 mb-4">
-                                    ${p.comments ? Object.values(p.comments).map(c => {
-                                        const cAuthor = allUsers[c.uid] || { nickname: c.author };
-                                        return `<div class="text-sm"><b class="text-blue-500 text-xs">@${cAuthor.nickname}:</b> ${c.text}</div>`
-                                    }).join('') : ''}
-                                </div>
-                                <div class="flex gap-2">
-                                    <input id="cin-${id}" class="w-full bg-zinc-100 dark:bg-zinc-700 rounded-xl px-4 py-2 text-xs outline-none" placeholder="Ответить...">
-                                    <button onclick="addComm('${id}')" class="text-blue-500 font-bold px-2">OK</button>
-                                </div>
+                            <p class="text-[16px] leading-relaxed mb-3">${p.content}</p>
+                            ${p.image ? `<img src="${p.image}" class="rounded-2xl w-full max-h-80 object-cover shadow-sm mb-4">` : ''}
+                            <div class="flex gap-6 items-center">
+                                <button onclick="like('${id}', '${p.uid}')" class="flex items-center gap-1.5 text-xs font-black transition-all ${isLiked ? 'text-red-500 scale-110' : 'opacity-20 hover:opacity-100'}">
+                                    ${isLiked ? '❤️':'🤍'} ${likes}
+                                </button>
+                                <button onclick="openChat('${p.uid}')" class="opacity-20 text-xs font-black hover:opacity-100">💬</button>
                             </div>
                         </div>
                     </div>
                 </div>`;
         }
 
-        function updateUI() {
-            db.ref('posts').once('value', s => {
-                const f = document.getElementById('feed'); f.innerHTML = "";
-                if(s.val()) Object.entries(s.val()).reverse().forEach(([id, p]) => f.innerHTML += renderPost(id, p));
-            });
-            
-            // Список людей
-            const buildList = () => {
-                let html = "";
-                Object.values(allUsers).forEach(u => {
-                    if(u.uid === currentUser?.uid) return;
-                    const av = u.avatar || `https://ui-avatars.com/api/?name=${u.nickname}`;
-                    html += `<div class="flex items-center gap-3"><img src="${av}" class="w-10 h-10 rounded-full border dark:border-zinc-700"><b class="text-sm">@${u.nickname} ${u.isAdmin ? vBadge : ''}</b></div>`;
-                });
-                document.getElementById('rec-list-desktop').innerHTML = html;
-                document.getElementById('rec-list-mobile').innerHTML = html;
-            }
-            buildList();
+        async function toggleFollow(tid) {
+            if(!currentUser) return;
+            const r = db.ref(`following/${currentUser.uid}/${tid}`);
+            const s = await r.once('value');
+            if(s.exists()) { r.remove(); db.ref(`followers/${tid}/${currentUser.uid}`).remove(); }
+            else { r.set(true); db.ref(`followers/${tid}/${currentUser.uid}`).set(true); sendNotif(tid, "подписался на тебя"); }
+            openProfile(tid);
         }
 
-        // --- ДЕЙСТВИЯ ---
-        window.doRepost = (id) => {
-            const myText = prompt("Ваш комментарий к репосту:", "Интересно!");
-            if(myText === null) return;
-            db.ref(`posts/${id}`).once('value', s => {
-                db.ref('posts').push({
-                    uid: currentUser.uid, author: userProfile.nickname,
-                    content: myText, repost: s.val(), date: Date.now()
-                });
+        window.like = (id, tid) => {
+            if(!currentUser) return;
+            const r = db.ref(`posts/${id}/likes/${currentUser.uid}`);
+            r.once('value').then(s => {
+                if(!s.exists()) { r.set(true); sendNotif(tid, "лайкнул твой пост"); }
+                else r.remove();
             });
         };
 
-        window.addComm = (id) => {
-            const i = document.getElementById(`cin-${id}`); if(!i.value.trim()) return;
-            db.ref(`posts/${id}/comments`).push({ uid: currentUser.uid, author: userProfile.nickname, text: i.value.trim() });
-            i.value = "";
+        // --- AUTH & FILE HANDLERS ---
+        auth.onAuthStateChanged(user => {
+            currentUser = user;
+            if(user) {
+                document.getElementById('post-input').classList.remove('hidden');
+                db.ref('users/' + user.uid).on('value', s => userProfile = s.val());
+                db.ref(`notifications/${user.uid}`).on('value', s => {
+                    const hasNew = s.val() && Object.values(s.val()).some(n => !n.read);
+                    document.getElementById('dot-notifs').style.display = hasNew ? 'block' : 'none';
+                });
+                document.getElementById('auth-btn').innerText = 'Выйти';
+            } else {
+                document.getElementById('post-input').classList.add('hidden');
+                document.getElementById('auth-btn').innerText = 'Войти';
+            }
+        });
+
+        document.getElementById('submit-auth').onclick = async () => {
+            const e = document.getElementById('email').value, p = document.getElementById('pass').value;
+            const u = document.getElementById('reg-user').value.toLowerCase().replace('@','').trim();
+            const n = document.getElementById('reg-nick').value.trim();
+            try {
+                if(!isLogin) {
+                    const ck = await db.ref('usernames/' + u).once('value');
+                    if(ck.exists()) return alert("Этот @username уже занят!");
+                    const r = await auth.createUserWithEmailAndPassword(e, p);
+                    await db.ref('users/' + r.user.uid).set({ uid: r.user.uid, username: u, nickname: n, avatar: "" });
+                    await db.ref('usernames/' + u).set(r.user.uid);
+                } else await auth.signInWithEmailAndPassword(e, p);
+                document.getElementById('auth-modal').classList.add('hidden');
+            } catch(ex) { alert(ex.message); }
         };
 
-        // Остальные стандартные функции
-        window.doLike = id => { const r = db.ref(`posts/${id}/likes/${currentUser.uid}`); r.once('value').then(s => s.exists() ? r.remove() : r.set(true)); };
-        window.toggleComm = id => document.getElementById(`cbox-${id}`).classList.toggle('hidden');
-        window.delPost = id => confirm("Удалить?") && db.ref(`posts/${id}`).remove();
+        document.getElementById('file-input').onchange = (e) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => selectedImg = ev.target.result;
+            reader.readAsDataURL(e.target.files[0]);
+        };
+
+        document.getElementById('av-input').onchange = (e) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => document.getElementById('set-av-pre').src = ev.target.result;
+            reader.readAsDataURL(e.target.files[0]);
+        };
 
         document.getElementById('send-btn').onclick = () => {
             const t = document.getElementById('post-text').value.trim();
-            if(!t && !selectedImg) return;
-            db.ref('posts').push({ uid: currentUser.uid, author: userProfile.nickname, content: t, image: selectedImg, date: Date.now(), isAdmin: userProfile.isAdmin || false });
-            document.getElementById('post-text').value = ""; clearImg();
+            if(t || selectedImg) db.ref('posts').push({ uid: currentUser.uid, content: t, image: selectedImg, date: Date.now() });
+            document.getElementById('post-text').value = ""; selectedImg = null;
         };
 
-        // --- AUTH & SETTINGS ---
         document.getElementById('auth-btn').onclick = () => currentUser ? auth.signOut() : document.getElementById('auth-modal').classList.remove('hidden');
-        document.getElementById('auth-toggle').onclick = () => { isLogin = !isLogin; document.getElementById('auth-title').innerText = isLogin ? "Вход":"Регистрация"; document.getElementById('reg-box').style.display = isLogin ? "none":"block"; };
-        document.getElementById('submit-auth').onclick = async () => {
-            const e = document.getElementById('email').value, p = document.getElementById('pass').value, n = document.getElementById('reg-nick').value;
-            try { if(isLogin) await auth.signInWithEmailAndPassword(e,p); else { const r = await auth.createUserWithEmailAndPassword(e,p); await db.ref('users/'+r.user.uid).set({ nickname: n, uid: r.user.uid, avatar: "" }); } document.getElementById('auth-modal').classList.add('hidden'); } catch(e) { alert(e.message); }
-        };
-        document.getElementById('open-settings').onclick = () => { document.getElementById('new-nick').value = userProfile.nickname; document.getElementById('set-av-pre').src = userProfile.avatar; document.getElementById('settings-modal').classList.remove('hidden'); };
-        document.getElementById('save-set').onclick = async () => { await db.ref('users/'+currentUser.uid).update({ nickname: document.getElementById('new-nick').value, avatar: document.getElementById('set-av-pre').src }); document.getElementById('settings-modal').classList.add('hidden'); };
-        
-        // Файлы
-        document.getElementById('file-input').onchange = (e) => { const r = new FileReader(); r.onload = (ev) => { selectedImg = ev.target.result; document.getElementById('img-preview').src = selectedImg; document.getElementById('preview-box').classList.remove('hidden'); }; r.readAsDataURL(e.target.files[0]); };
-        document.getElementById('av-input').onchange = (e) => { const r = new FileReader(); r.onload = (ev) => { document.getElementById('set-av-pre').src = ev.target.result; }; r.readAsDataURL(e.target.files[0]); };
-        window.clearImg = () => { selectedImg = null; document.getElementById('preview-box').classList.add('hidden'); };
-        document.getElementById('theme-toggle').onclick = () => document.documentElement.classList.toggle('dark');
-        
-        // Первый запуск
-        db.ref('posts').on('value', updateUI);
+        document.getElementById('auth-toggle').onclick = () => { isLogin = !isLogin; document.getElementById('auth-title').innerText = isLogin ? "Вход":"Регистрация"; document.getElementById('reg-fields').classList.toggle('hidden'); document.getElementById('auth-toggle').innerText = isLogin ? "Нет аккаунта? Создать" : "Уже есть аккаунт? Войти"; };
+
+        db.ref('users').on('value', s => { allUsers = s.val() || {}; renderFeed(); });
+        showView('feed');
     </script>
 </body>
 </html>
